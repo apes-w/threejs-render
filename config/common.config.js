@@ -28,7 +28,7 @@ module.exports = {
         },
       },
       {
-        test: /\.(png|jpe?g|gif)/,
+        test: /\.(png|jpe?g|gif)$/,
         use: [
           {
             loader: 'url-loader',
@@ -46,6 +46,10 @@ module.exports = {
             },
           },
         ],
+      },
+      {
+        test: /\.(glsl)$/,
+        use: ['glslify-import-loader', 'raw-loader', 'glslify-loader'],
       },
     ],
   },

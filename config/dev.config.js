@@ -1,4 +1,3 @@
-const path = require('path');
 const webpack = require('webpack');
 const merge = require('webpack-merge');
 const commonConfig = require('./common.config.js');
@@ -38,7 +37,6 @@ const devConfig = {
           loader: 'eslint-loader',
         },
         enforce: 'pre',
-        // include: path.resolve(__dirname, './src'), // 检查指定目录
         exclude: /node_modules/,
       },
     ],
