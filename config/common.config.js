@@ -13,9 +13,9 @@ module.exports = {
     chunkFilename: 'js/[name].js',
   },
   resolve: {
-    extensions: ['.js'],
+    // extensions: ['.js'],
     alias: {
-      '@': path.resolve(__dirname, '../'),
+      '@': path.resolve(__dirname, '../src'),
     },
   },
   module: {
@@ -28,7 +28,7 @@ module.exports = {
         },
       },
       {
-        test: /\.(png|jpe?g|gif)$/,
+        test: /\.(png|jpe?g)$/,
         use: [
           {
             loader: 'url-loader',
@@ -43,6 +43,18 @@ module.exports = {
                   name: '[name].[hash:8].[ext]',
                 },
               },
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(hdr|gif)/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              context: 'src',
+              name: '[path][name].[ext]',
             },
           },
         ],

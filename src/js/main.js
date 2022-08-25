@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as dat from 'dat.gui';
 
+import LanternRender from './lanternRender';
+
 import vertexShader from './mainShader/vertex.glsl';
 import fragmentShader from './mainShader/fragment.glsl';
 
@@ -51,6 +53,9 @@ class MainRender {
 
   // 初始化
   init() {
+
+    this.lantern = new LanternRender(this.scene);
+
     const shaderMaterial = new THREE.RawShaderMaterial({
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
