@@ -47,6 +47,7 @@ class LanternRender {
     // 异步加载模型
     this.gltfLoader.loadAsync(flyLightModel).then(val => {
       // console.log(val);
+      // 模型导入到shader中，进行计算时，应该是根据 m 作为单位进行计算
       const modelMesh = val.scene;
       this.scene.add(modelMesh);
       this.setShaderMaterial(modelMesh.children[1]);
