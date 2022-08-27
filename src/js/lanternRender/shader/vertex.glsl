@@ -10,6 +10,7 @@ varying vec4 vPosition;
 void main() {
   vec4 resultPosition = modelMatrix * vec4(position, 1.0);
   gPosition = vec4(position, 1.0);
+  vPosition = resultPosition;
 
   gl_Position = projectionMatrix * viewMatrix * resultPosition;
 }

@@ -3,6 +3,7 @@ import {
   LoadingManager,
   EquirectangularReflectionMapping,
   DoubleSide,
+  Vector3,
 } from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -49,8 +50,17 @@ class LanternRender {
       // console.log(val);
       // 模型导入到shader中，进行计算时，应该是根据 m 作为单位进行计算
       const modelMesh = val.scene;
-      this.scene.add(modelMesh);
       this.setShaderMaterial(modelMesh.children[1]);
+      // 创建多个灯笼
+      for (let i =0; i < 100; i++) {
+        let tempFlyLight = modelMesh.clone(true);
+        let x = (Math.random() - 0.5) * 600;
+        let z = (Math.random() - 0.5) * 600;
+        let y = Math.random() * 200 + 40;
+        tempFlyLight.position.set(x, y, z);
+        tempFlyLight.scale.set(2.5, 2.5, 2.5);
+        this.scene.add(tempFlyLight);
+      }
     });
   }
 
