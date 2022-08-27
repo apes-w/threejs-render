@@ -48,7 +48,7 @@ module.exports = {
         ],
       },
       {
-        test: /\.(hdr|gif)/,
+        test: /\.(hdr|gif|blend|glb)/,
         use: [
           {
             loader: 'url-loader',

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import * as dat from 'dat.gui';
+// import * as dat from 'dat.gui';
 
 import LanternRender from './lanternRender';
 
-import vertexShader from './mainShader/vertex.glsl';
-import fragmentShader from './mainShader/fragment.glsl';
+// import vertexShader from './mainShader/vertex.glsl';
+// import fragmentShader from './mainShader/fragment.glsl';
 
 class MainRender {
   constructor() {
@@ -30,18 +30,21 @@ class MainRender {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
-    const axesHelper = new THREE.AxesHelper(50);
-    this.scene.add(axesHelper);
+    // const axesHelper = new THREE.AxesHelper(50);
+    // this.scene.add(axesHelper);
 
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(this.sceneWidth, this.sceneHeight);
     this.renderer.setClearColor(0x696969, 1);
     document.body.appendChild(this.renderer.domElement);
+    this.renderer.outputEncoding = THREE.sRGBEncoding; // 让颜色变化接近人眼感知的变化
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // （针对hdr的调整）调整色调，让整体的色调接近一种电影的调色的感觉
+    this.renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效果
 
     // 添加轨道控制器
     new OrbitControls(this.camera, this.renderer.domElement);
 
-    this.gui = new dat.GUI();
+    // this.gui = new dat.GUI();
 
     this.init();
   }
@@ -56,33 +59,33 @@ class MainRender {
 
     this.lantern = new LanternRender(this.scene);
 
-    const shaderMaterial = new THREE.RawShaderMaterial({
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      side: THREE.DoubleSide, // 双面渲染
-      uniforms: {
-        uTime: {
-          value: 0,
-        },
-        uJsChange: {
-          value: 10.0,
-        },
-      },
-    });
+    // const shaderMaterial = new THREE.RawShaderMaterial({
+    //   vertexShader: vertexShader,
+    //   fragmentShader: fragmentShader,
+    //   side: THREE.DoubleSide, // 双面渲染
+    //   uniforms: {
+    //     uTime: {
+    //       value: 0,
+    //     },
+    //     uJsChange: {
+    //       value: 10.0,
+    //     },
+    //   },
+    // });
 
-    this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(30, 20, 30, 30),
-      shaderMaterial,
-    );
+    // this.mesh = new THREE.Mesh(
+    //   new THREE.PlaneGeometry(30, 20, 30, 30),
+    //   shaderMaterial,
+    // );
 
-    this.scene.add(this.mesh);
+    // this.scene.add(this.mesh);
 
-    this.gui
-      .add(shaderMaterial.uniforms.uJsChange, 'value')
-      .min(6.0)
-      .max(20.0)
-      .step(0.1)
-      .name('uJsChange');
+    // this.gui
+    //   .add(shaderMaterial.uniforms.uJsChange, 'value')
+    //   .min(6.0)
+    //   .max(20.0)
+    //   .step(0.1)
+    //   .name('uJsChange');
   }
 
   /**
@@ -91,8 +94,8 @@ class MainRender {
    * @param {Number} clock 当前渲染对应的时间点
    * @param {Number} timeInterval 距上次渲染的时间
    */
-  render(clock) {
-    this.mesh.material.uniforms.uTime.value = clock;
+  render() {
+    // this.mesh.material.uniforms.uTime.value = clock;
     this.renderer.render(this.scene, this.camera);
   }
 }
