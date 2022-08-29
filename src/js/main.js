@@ -58,6 +58,7 @@ class MainRender {
   init() {
 
     this.lantern = new LanternRender(this.scene);
+    console.log(this.lantern);
 
     // const shaderMaterial = new THREE.RawShaderMaterial({
     //   vertexShader: vertexShader,
@@ -96,6 +97,8 @@ class MainRender {
    */
   render() {
     // this.mesh.material.uniforms.uTime.value = clock;
+    // console.log(this.lantern.meshList);
+    // this.lantern.render();
     this.renderer.render(this.scene, this.camera);
   }
 }

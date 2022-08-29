@@ -3,8 +3,8 @@ import {
   LoadingManager,
   EquirectangularReflectionMapping,
   DoubleSide,
-  Vector3,
 } from 'three';
+import gsap from 'gsap';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
@@ -24,6 +24,8 @@ class LanternRender {
     this.loader = new RGBELoader(this.loadManager);
 
     this.gltfLoader = new GLTFLoader();
+
+    this.meshList = [];
 
     this.init();
   }
@@ -52,13 +54,19 @@ class LanternRender {
       const modelMesh = val.scene;
       this.setShaderMaterial(modelMesh.children[1]);
       // 创建多个灯笼
-      for (let i =0; i < 100; i++) {
+      for (let i = 0; i < 100; i++) {
         let tempFlyLight = modelMesh.clone(true);
         let x = (Math.random() - 0.5) * 600;
         let z = (Math.random() - 0.5) * 600;
         let y = Math.random() * 200 + 40;
         tempFlyLight.position.set(x, y, z);
         tempFlyLight.scale.set(2.5, 2.5, 2.5);
+        this.meshList.push(tempFlyLight);
+        gsap.to(tempFlyLight.rotate, {
+          y: Math.PI * 2,
+          duration: 10 + Math.random() * 10,
+          repeat: -1,
+        });
         this.scene.add(tempFlyLight);
       }
     });
@@ -71,6 +79,17 @@ class LanternRender {
       side: DoubleSide,
     });
     mesh.material = shaderMaterial;
+  }
+
+  render() {
+    // console.log(this.meshList);
+    // this.meshList.forEach(item => {
+    //   gsap.to(item.rotate, {
+    //     y: Math.PI * 2,
+    //     duration: 10 + Math.random() * 10,
+    //     repeat: -1,
+    //   })
+    // });
   }
 }
 
