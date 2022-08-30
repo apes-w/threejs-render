@@ -34,7 +34,7 @@ class Water {
       });
     gui
       .add(this.params, 'uScale')
-      .min(6)
+      .min(3)
       .max(15)
       .step(0.1)
       .onChange((val) => {

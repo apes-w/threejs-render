@@ -17,7 +17,8 @@ void main() {
   // resultPosition 世界坐标系，可以再这个坐标系下执行缩放、移动、旋转等操作
   vec4 resultPosition = modelMatrix * vec4(position, 1.0);
   // 先设置波浪的效果
-  float fHeight = sin(resultPosition.x * uWaveFrequency) * uScale;
+  float fHeight = sin(resultPosition.x * uWaveFrequency) * sin(resultPosition.z * uWaveFrequency);
+  fHeight *= uScale;
   resultPosition.y += fHeight;
   gl_Position = projectionMatrix * viewMatrix * resultPosition;
 }
