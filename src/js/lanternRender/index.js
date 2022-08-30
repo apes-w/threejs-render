@@ -15,7 +15,7 @@ import flyLightModel from '@/assets/model/flyLight.glb';
 import vertexShader from './shader/vertex.glsl';
 import fragmentShader from './shader/fragment.glsl';
 
-let renderTimes = 0;
+// let renderTimes = 0;
 
 class LanternRender {
   /**
