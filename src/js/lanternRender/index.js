@@ -3,6 +3,7 @@ import {
   LoadingManager,
   EquirectangularReflectionMapping,
   DoubleSide,
+  Vector3,
 } from 'three';
 import gsap from 'gsap';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
@@ -13,6 +14,8 @@ import flyLightModel from '@/assets/model/flyLight.glb';
 
 import vertexShader from './shader/vertex.glsl';
 import fragmentShader from './shader/fragment.glsl';
+
+let renderTimes = 0;
 
 class LanternRender {
   /**
@@ -39,11 +42,11 @@ class LanternRender {
 
   // 加载成功
   loadSuccess(val) {
-    console.log(val);
+    console.log('模型加载成功', val);
   }
   // 加载失败
   loadError(val) {
-    console.log('失败', val);
+    console.log('模型加载失败', val);
   }
 
   setLoad() {
@@ -84,7 +87,7 @@ class LanternRender {
   }
 
   init() {
-    this.setControls();
+    // this.setControls();
     this.setLoad();
 
     // 异步加载环境贴图
@@ -108,15 +111,39 @@ class LanternRender {
         let y = Math.random() * 200 + 40;
         tempFlyLight.position.set(x, y, z);
         tempFlyLight.scale.set(2.5, 2.5, 2.5);
+        tempFlyLight.userData = {
+          yAxisDistance: Math.pow(Math.pow(x, 2) + Math.pow(z, 2), 0.5),
+        };
+        const xAxis = new Vector3(1, 0, 0);
+        const meshAxis = new Vector3(x, 0, z);
+        const angle = meshAxis.angleTo(xAxis);
+        tempFlyLight.userData.oldAngle = z > 0 ? angle : Math.PI + angle;
         this.meshList.push(tempFlyLight);
         this.scene.add(tempFlyLight);
       }
+      // console.log('初始', this.meshList);
       this.rotateMesh();
     });
   }
 
-  render() {
+  render(time, interval) {
     this.controls.update();
+
+    renderTimes += 1;
+
+    // 所有物体绕一个固定轴旋转
+    this.meshList.forEach(item => {
+      const {
+        userData: { yAxisDistance, oldAngle },
+      } = item;
+      // 求出以物体的x，z轴为向量和x轴之间的角度
+      const newAngle = oldAngle + interval / 20;
+      const x = Math.sin(newAngle) * yAxisDistance;
+      const z = Math.cos(newAngle) * yAxisDistance;
+      item.position.set(x, item.position.y, z);
+      item.userData.oldAngle = newAngle;
+    });
+    // console.log('');
   }
 }
 

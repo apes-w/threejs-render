@@ -7,7 +7,7 @@ const devServer = {
   host: 'localhost',
   port: 8090,
   contentBase: './dist',
-  open: false,
+  open: true,
   hot: true,
 };
 

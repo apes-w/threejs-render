@@ -2,6 +2,7 @@ import {
   Clock,
   Scene,
   PerspectiveCamera,
+  AxesHelper,
   PointLight,
   WebGLRenderer,
   sRGBEncoding,
@@ -27,6 +28,9 @@ camera.lookAt(scene.position);
 const light = new PointLight(0xffffff, 2, 1000);
 light.position.set(0, 100, 10);
 scene.add(light);
+
+const axesHelper = new AxesHelper(30);
+scene.add(axesHelper);
 
 const renderer = new WebGLRenderer();
 renderer.setSize(sceneWidth, sceneHeight);
@@ -54,7 +58,7 @@ let _oldTime = 0;
 function animeRender() {
   const nowTime = clock.getElapsedTime();
 
-  lantern.render();
+  lantern.render(nowTime, nowTime - _oldTime);
   renderer.render(scene, camera);
 
   _oldTime = nowTime;
