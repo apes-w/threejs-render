@@ -25,7 +25,7 @@ const camera = new PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(60, 20, 60);
+camera.position.set(60, 30, 80);
 camera.lookAt(scene.position);
 
 const light = new PointLight(0xffffff, 2, 1000);
