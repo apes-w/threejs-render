@@ -10,8 +10,11 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+// eslint-disable-next-line
 import MainRender from './src/js/mainRender/main';
+// eslint-disable-next-line
 import LanternRender from './src/js/lanternRender';
+import WaterRender from './src/js/waterRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -41,24 +44,28 @@ renderer.toneMapping = ACESFilmicToneMapping; // （针对hdr的调整）调整�
 renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效果
 
 // 添加轨道控制器
+// eslint-disable-next-line
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // const mainRender = new MainRender({ scene });
-const lantern = new LanternRender(
-  { scene, controls },
-  {
-    executeRender: () => {
-      renderer.render(scene, camera);
-    },
-  },
-);
+// const lantern = new LanternRender(
+//   { scene, controls },
+//   {
+//     executeRender: () => {
+//       renderer.render(scene, camera);
+//     },
+//   },
+// );
+// eslint-disable-next-line
+const waterRender = new WaterRender({ scene });
 
 const clock = new Clock();
+// eslint-disable-next-line
 let _oldTime = 0;
 function animeRender() {
   const nowTime = clock.getElapsedTime();
 
-  lantern.render(nowTime, nowTime - _oldTime);
+  // lantern.render(nowTime, nowTime - _oldTime);
   renderer.render(scene, camera);
 
   _oldTime = nowTime;
