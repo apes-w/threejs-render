@@ -15,15 +15,17 @@ import vertexShader from './shader/vertex.glsl';
 import fragmentShader from './shader/fragment.glsl';
 
 class LanternRender {
-  constructor(scene) {
+  /**
+   * 
+   * @param {Object} val 所有和threejs相关的变量
+   */
+  constructor(val) {
+    const {
+      scene,
+      controls,
+    } = val;
     this.scene = scene;
-
-    this.loadManager = new LoadingManager();
-    this.loadManager.onLoad = this.loadSuccess;
-    this.loadManager.onError = this.loadError;
-    this.loader = new RGBELoader(this.loadManager);
-
-    this.gltfLoader = new GLTFLoader();
+    this.controls = controls;
 
     this.meshList = [];
 
@@ -39,7 +41,35 @@ class LanternRender {
     console.log('失败', val);
   }
 
+  setLoad() {
+    this.loadManager = new LoadingManager();
+    this.loadManager.onLoad = this.loadSuccess;
+    this.loadManager.onError = this.loadError;
+    this.loader = new RGBELoader(this.loadManager);
+
+    this.gltfLoader = new GLTFLoader();
+  }
+
+  setControls() {
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 0.2;
+    this.controls.maxPolarAngle = (Math.PI / 3) * 2;
+    this.controls.minPolarAngle = (Math.PI / 3) * 2;
+  }
+
+  setShaderMaterial(mesh) {
+    const shaderMaterial = new ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      side: DoubleSide,
+    });
+    mesh.material = shaderMaterial;
+  }
+
   init() {
+    this.setControls();
+    this.setLoad();
+
     // 异步加载环境贴图
     this.loader.loadAsync(environmentImg).then(texture => {
       texture.mapping = EquirectangularReflectionMapping;
@@ -62,7 +92,6 @@ class LanternRender {
         tempFlyLight.position.set(x, y, z);
         tempFlyLight.scale.set(2.5, 2.5, 2.5);
         this.meshList.push(tempFlyLight);
-        console.log(tempFlyLight);
         gsap.to(tempFlyLight.rotation, {
           y: Math.PI * 2,
           duration: 24 + Math.random() * 10,
@@ -73,24 +102,8 @@ class LanternRender {
     });
   }
 
-  setShaderMaterial(mesh) {
-    const shaderMaterial = new ShaderMaterial({
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      side: DoubleSide,
-    });
-    mesh.material = shaderMaterial;
-  }
-
   render() {
-    // console.log(this.meshList);
-    // this.meshList.forEach(item => {
-    //   gsap.to(item.rotate, {
-    //     y: Math.PI * 2,
-    //     duration: 10 + Math.random() * 10,
-    //     repeat: -1,
-    //   })
-    // });
+    this.controls.update();
   }
 }
 
