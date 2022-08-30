@@ -62,9 +62,10 @@ class LanternRender {
         tempFlyLight.position.set(x, y, z);
         tempFlyLight.scale.set(2.5, 2.5, 2.5);
         this.meshList.push(tempFlyLight);
-        gsap.to(tempFlyLight.rotate, {
+        console.log(tempFlyLight);
+        gsap.to(tempFlyLight.rotation, {
           y: Math.PI * 2,
-          duration: 10 + Math.random() * 10,
+          duration: 24 + Math.random() * 10,
           repeat: -1,
         });
         this.scene.add(tempFlyLight);

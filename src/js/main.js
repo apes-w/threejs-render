@@ -42,7 +42,11 @@ class MainRender {
     this.renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效果
 
     // 添加轨道控制器
-    new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 0.2;
+    this.controls.maxPolarAngle = (Math.PI / 3) * 2;
+    this.controls.minPolarAngle = (Math.PI / 3) * 2;
 
     // this.gui = new dat.GUI();
 
@@ -99,6 +103,7 @@ class MainRender {
     // this.mesh.material.uniforms.uTime.value = clock;
     // console.log(this.lantern.meshList);
     // this.lantern.render();
+    this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
 }
