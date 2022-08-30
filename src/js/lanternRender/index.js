@@ -18,14 +18,19 @@ class LanternRender {
   /**
    * 
    * @param {Object} val 所有和threejs相关的变量
+   * @param {Object} other 其他的一些变量或者是方法
    */
-  constructor(val) {
+  constructor(val, other) {
     const {
       scene,
       controls,
     } = val;
+    const {
+      executeRender,
+    } = other;
     this.scene = scene;
     this.controls = controls;
+    this.executeRender = executeRender;
 
     this.meshList = [];
 
@@ -53,8 +58,10 @@ class LanternRender {
   setControls() {
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.2;
-    this.controls.maxPolarAngle = (Math.PI / 3) * 2;
-    this.controls.minPolarAngle = (Math.PI / 3) * 2;
+    this.controls.maxPolarAngle = (Math.PI / 3) * 2; // 垂直方向上可以旋转的角度上限
+    this.controls.minPolarAngle = (Math.PI / 3) * 2; // 垂直方向上可以旋转的角度下限
+    this.controls.update();
+    this.executeRender();
   }
 
   setShaderMaterial(mesh) {
@@ -64,6 +71,16 @@ class LanternRender {
       side: DoubleSide,
     });
     mesh.material = shaderMaterial;
+  }
+
+  rotateMesh() {
+    this.meshList.forEach(item => {
+      gsap.to(item.rotation, {
+        y: Math.PI * 2,
+        duration: 24 + Math.random() * 10,
+        repeat: -1,
+      });
+    });
   }
 
   init() {
@@ -92,13 +109,9 @@ class LanternRender {
         tempFlyLight.position.set(x, y, z);
         tempFlyLight.scale.set(2.5, 2.5, 2.5);
         this.meshList.push(tempFlyLight);
-        gsap.to(tempFlyLight.rotation, {
-          y: Math.PI * 2,
-          duration: 24 + Math.random() * 10,
-          repeat: -1,
-        });
         this.scene.add(tempFlyLight);
       }
+      this.rotateMesh();
     });
   }
 

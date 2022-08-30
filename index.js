@@ -40,18 +40,25 @@ renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效�
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // const mainRender = new MainRender({ scene });
-const lantern = new LanternRender({ scene, controls });
+const lantern = new LanternRender(
+  { scene, controls },
+  {
+    executeRender: () => {
+      renderer.render(scene, camera);
+    },
+  },
+);
 
 const clock = new Clock();
 let _oldTime = 0;
 function animeRender() {
-  requestAnimationFrame(animeRender);
   const nowTime = clock.getElapsedTime();
 
   lantern.render();
   renderer.render(scene, camera);
 
   _oldTime = nowTime;
+  requestAnimationFrame(animeRender);
 }
 
 animeRender();
