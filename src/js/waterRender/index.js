@@ -9,6 +9,8 @@ import * as dat from 'dat.gui';
 import vertexShader from './shader/vertex.glsl';
 import fragmentShader from './shader/fragment.glsl';
 
+let renderTime = 0;
+
 class Water {
   constructor(val) {
     const { scene } = val;
@@ -16,16 +18,43 @@ class Water {
 
     this.uniformParams = {
       uWaveFrequency: {
-        min: 49.9,
-        max: 50.2,
+        min: 49.97,
+        max: 50.18,
         step: 0.001,
         value: 50,
+        guiShow: false,
       },
       uScale: { // 上下浮动的距离
-        min: 3,
-        max: 15,
-        step: 0.1,
-        value: 10.0,
+        min: 2,
+        max: 6,
+        step: 0.01,
+        value: 4.0,
+        guiShow: true,
+      },
+      uNoiseScale: {
+        min: 0.2,
+        max: 0.6,
+        step: 0.01,
+        value: 0.4,
+        guiShow: true,
+      },
+      uTime: {
+        value: 0,
+        guiShow: false,
+      },
+      uXSpeed: {
+        min: 0,
+        max: 5,
+        step: 0.01,
+        value: 0,
+        guiShow: true,
+      },
+      uZSpeed: {
+        min: 0,
+        max: 5,
+        step: 0.01,
+        value: 0,
+        guiShow: true,
       },
     };
 
@@ -41,12 +70,14 @@ class Water {
           min,
           max,
           step,
+          guiShow,
         },
       ] = item;
       if (
         typeof min === 'number'
         && typeof max === 'number'
         && typeof step === 'number'
+        && guiShow
       ) {
         gui
           .add(this.uniformParams[propName], 'value')
@@ -79,7 +110,18 @@ class Water {
     this.setDatGui();
   }
 
-  render() {}
+  render(time) {
+    renderTime += 1;
+    if (renderTime >= 100) {
+      renderTime = 0;
+    }
+    const {
+      uWaveFrequency,
+    } = this.uniformParams;
+    this.mesh.material.uniforms.uWaveFrequency.value =
+      Math.sin(time / 20) * (uWaveFrequency.max - uWaveFrequency.min) + uWaveFrequency.min;
+    this.mesh.material.uniforms.uTime.value = time;
+  }
 }
 
 export default Water;
