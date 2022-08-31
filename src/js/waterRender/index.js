@@ -18,14 +18,14 @@ class Water {
 
     this.uniformParams = {
       uWaveFrequency: {
-        min: 49.97,
-        max: 50.18,
+        min: 49.9,
+        max: 50.2,
         step: 0.001,
         value: 50,
-        guiShow: false,
+        guiShow: true,
       },
       uScale: { // 上下浮动的距离
-        min: 2,
+        min: 0.2,
         max: 6,
         step: 0.01,
         value: 4.0,
@@ -115,11 +115,11 @@ class Water {
     if (renderTime >= 100) {
       renderTime = 0;
     }
-    const {
-      uWaveFrequency,
-    } = this.uniformParams;
-    this.mesh.material.uniforms.uWaveFrequency.value =
-      Math.sin(time / 20) * (uWaveFrequency.max - uWaveFrequency.min) + uWaveFrequency.min;
+    // const {
+    //   uWaveFrequency,
+    // } = this.uniformParams;
+    // this.mesh.material.uniforms.uWaveFrequency.value =
+    //   Math.sin(time / 20) * (uWaveFrequency.max - uWaveFrequency.min) + uWaveFrequency.min;
     this.mesh.material.uniforms.uTime.value = time;
   }
 }
