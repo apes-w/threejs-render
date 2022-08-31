@@ -7,6 +7,8 @@ precision mediump float;
 uniform float uWaveFrequency;
 uniform float uScale;
 
+varying float vDepth;
+
 void main() {
   /*
     投影矩阵 * 视图矩阵 * 模型矩阵 * 顶点坐标
@@ -19,6 +21,8 @@ void main() {
   // 先设置波浪的效果
   float fHeight = sin(resultPosition.x * uWaveFrequency) * sin(resultPosition.z * uWaveFrequency);
   fHeight *= uScale;
+  // 把vDepth的取值范围设置为 [0, 1]
+  vDepth = (fHeight + uScale) / uScale / 2.0;
   resultPosition.y += fHeight;
   gl_Position = projectionMatrix * viewMatrix * resultPosition;
 }

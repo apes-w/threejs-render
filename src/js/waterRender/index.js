@@ -14,9 +14,19 @@ class Water {
     const { scene } = val;
     this.scene = scene;
 
-    this.params = {
-      uWaveFrequency: 50,
-      uScale: 10.0, // 上下浮动的距离
+    this.uniformParams = {
+      uWaveFrequency: {
+        min: 49.9,
+        max: 50.2,
+        step: 0.001,
+        value: 50,
+      },
+      uScale: { // 上下浮动的距离
+        min: 3,
+        max: 15,
+        step: 0.1,
+        value: 10.0,
+      },
     };
 
     this.init();
@@ -24,22 +34,31 @@ class Water {
 
   setDatGui() {
     const gui = new dat.GUI();
-    gui
-      .add(this.params, 'uWaveFrequency')
-      .min(49)
-      .max(51)
-      .step(0.01)
-      .onChange((val) => {
-        this.mesh.material.uniforms.uWaveFrequency.value = val;
-      });
-    gui
-      .add(this.params, 'uScale')
-      .min(3)
-      .max(15)
-      .step(0.1)
-      .onChange((val) => {
-        this.mesh.material.uniforms.uScale.value = val;
-      });
+    Object.entries(this.uniformParams).forEach(item => {
+      const [
+        propName,
+        {
+          min,
+          max,
+          step,
+        },
+      ] = item;
+      if (
+        typeof min === 'number'
+        && typeof max === 'number'
+        && typeof step === 'number'
+      ) {
+        gui
+          .add(this.uniformParams[propName], 'value')
+          .min(min)
+          .max(max)
+          .step(step)
+          .name(propName)
+          .onChange((val) => {
+            this.mesh.material.uniforms[propName].value = val;
+          });
+      }
+    });
   }
 
   init() {
@@ -48,8 +67,8 @@ class Water {
       vertexShader,
       fragmentShader,
       side: DoubleSide,
-      uniforms: Object.entries(this.params).reduce((val, item) => {
-        val[item[0]] = { value: item[1] };
+      uniforms: Object.entries(this.uniformParams).reduce((val, item) => {
+        val[item[0]] = { value: item[1].value };
         return val;
       }, {}),
     });
