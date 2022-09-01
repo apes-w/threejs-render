@@ -6,8 +6,8 @@ import {
 } from 'three';
 import * as dat from 'dat.gui';
 
-import vertexShader from './shader/vertex.glsl';
-import fragmentShader from './shader/fragment.glsl';
+import vertexShader from './shader/vertex.vs.glsl';
+import fragmentShader from './shader/fragment.fs.glsl';
 
 let renderTime = 0;
 
@@ -17,11 +17,11 @@ class Water {
     this.scene = scene;
 
     this.uniformParams = {
-      uWaveFrequency: {
-        min: 49.9,
-        max: 50.2,
+      uWaveFrequency: { // 波浪大的运动轨迹
+        min: 50.04,
+        max: 50.187,
         step: 0.001,
-        value: 50,
+        value: 50.1,
         guiShow: true,
       },
       uScale: { // 上下浮动的距离
@@ -31,9 +31,16 @@ class Water {
         value: 4.0,
         guiShow: true,
       },
-      uNoiseScale: {
+      uNoiseScaleScope: { // 噪声发生的密集程度
+        min: 120,
+        max: 300,
+        step: 1,
+        value: 220,
+        guiShow: true,
+      },
+      uNoiseScaleHeight: { // 噪声的上下浮动的距离
         min: 0.2,
-        max: 0.6,
+        max: 10,
         step: 0.01,
         value: 0.4,
         guiShow: true,
@@ -63,6 +70,7 @@ class Water {
 
   setDatGui() {
     const gui = new dat.GUI();
+    gui.width = 320;
     Object.entries(this.uniformParams).forEach(item => {
       const [
         propName,

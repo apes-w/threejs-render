@@ -90,8 +90,8 @@ float cnoise(vec2 P)
 
 uniform float uWaveFrequency;
 uniform float uScale;
-uniform float uNoiseScale;
-uniform float uTime;
+uniform float uNoiseScaleScope;
+uniform float uNoiseScaleHeight;
 uniform float uXSpeed;
 uniform float uZSpeed;
 
@@ -106,14 +106,21 @@ void main() {
   */
   // resultPosition 世界坐标系，可以再这个坐标系下执行缩放、移动、旋转等操作
   vec4 resultPosition = modelMatrix * vec4(position, 1.0);
-  float useUTime = 0.0;
   // 根据坐标所在的位置，设置出波浪的效果
-  float fHeight = sin(resultPosition.x * uWaveFrequency + useUTime * uXSpeed) * sin(resultPosition.z * uWaveFrequency + useUTime * uZSpeed);
+  float fHeight = sin(resultPosition.x * uWaveFrequency) * sin(resultPosition.z * uWaveFrequency);
   // 在波浪上，添加噪声函数，是现在光滑的曲面上在额外添加一些变化
-  fHeight += -abs(cnoise(resultPosition.xz * uWaveFrequency + useUTime * 3.0)) * uNoiseScale;
+  /*
+    uNoiseScaleHeight
+      可以控制噪声变化的程度上，越大也就代表着月剧烈
+    resultPosition.xz * uWaveFrequency / uNoiseScaleScope
+      可以控制噪声变化发生的密集程度，最后的结果越大就代表着发生得越密集
+  */
+  float noiseHeight = -abs(cnoise(resultPosition.xz * uWaveFrequency / uNoiseScaleScope)) * uNoiseScaleHeight;
+  fHeight += noiseHeight;
+  vDepth = (fHeight - noiseHeight + 1.0) / 2.0;
   fHeight *= uScale;
   // 把vDepth的取值范围设置为 [0, 1]
-  vDepth = (fHeight + uScale) / uScale / 2.0;
-  resultPosition.y += fHeight;
+  // vDepth = (fHeight + uScale) / (uScale * 2.0) - 0.2;
+  resultPosition.y += fHeight + (-noiseHeight / 2.0);
   gl_Position = projectionMatrix * viewMatrix * resultPosition;
 }
