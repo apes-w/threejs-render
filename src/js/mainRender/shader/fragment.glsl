@@ -289,8 +289,8 @@ void main() {
   // float strength = abs(cnoise(vUv * uJsChange));
   // gl_FragColor = vec4(strength, strength, strength, 1.0);
   // 发光路径
-  // float strength = 1.0 - abs(cnoise(vUv * uJsChange));
-  // gl_FragColor = vec4(strength, strength, strength, 1.0);
+  float strength = 1.0 - abs(cnoise(vUv * uJsChange));
+  gl_FragColor = vec4(strength, strength, strength, 1.0);
   // float strength = sin(cnoise(vUv * uJsChange) * 12.0);
   // gl_FragColor = vec4(strength, strength, strength, 1.0);
   // 类似水波纹的效果
@@ -303,10 +303,10 @@ void main() {
     使用颜色混合之后，strength为 1 时，显示为 yellowColor
   */
 
-  vec3 blackColor = vec3(0.0, 0.0, 0.0);
-  vec3 yellowColor = vec3(1.0, 1.0, 0.0);
-  // float strength = step(0.9, sin(cnoise(vUv * uJsChange) * 20.0));
-  float strength = sin(cnoise(vUv * uJsChange) * 30.0);
-  vec3 mixColor = mix(blackColor, yellowColor, strength);
-  gl_FragColor = vec4(mixColor, 1.0);
+  // vec3 blackColor = vec3(0.0, 0.0, 0.0);
+  // vec3 yellowColor = vec3(1.0, 1.0, 0.0);
+  // // float strength = step(0.9, sin(cnoise(vUv * uJsChange) * 20.0));
+  // float strength = sin(cnoise(vUv * uJsChange) * 30.0);
+  // vec3 mixColor = mix(blackColor, yellowColor, strength);
+  // gl_FragColor = vec4(mixColor, 1.0);
 }

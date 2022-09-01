@@ -37,15 +37,17 @@ class MainRender {
       },
     });
 
-    const mesh = new Mesh(
+    this.mesh = new Mesh(
       new PlaneGeometry(30, 20, 30, 30),
       shaderMaterial,
     );
 
-    this.scene.add(mesh);
+    this.scene.add(this.mesh);
   }
 
-  render() {}
+  render(time) {
+    this.mesh.material.uniforms.uTime.value = time;
+  }
 }
 
 export default MainRender;
