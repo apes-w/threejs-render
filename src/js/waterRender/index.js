@@ -28,21 +28,28 @@ class Water {
         min: 0.2,
         max: 6,
         step: 0.01,
-        value: 4.0,
+        value: 1,
         guiShow: true,
       },
       uNoiseScaleScope: { // 噪声发生的密集程度
-        min: 120,
-        max: 300,
+        min: 320,
+        max: 700,
         step: 1,
-        value: 220,
+        value: 420,
         guiShow: true,
       },
       uNoiseScaleHeight: { // 噪声的上下浮动的距离
         min: 0.2,
         max: 10,
         step: 0.01,
-        value: 0.4,
+        value: 3.6,
+        guiShow: true,
+      },
+      uNoiseSpeed: {
+        min: 10,
+        max: 40,
+        step: 1,
+        value: 25,
         guiShow: true,
       },
       uTime: {
@@ -51,16 +58,23 @@ class Water {
       },
       uXSpeed: {
         min: 0,
-        max: 5,
-        step: 0.01,
+        max: 30,
+        step: 0.1,
         value: 0,
         guiShow: true,
       },
       uZSpeed: {
         min: 0,
-        max: 5,
-        step: 0.01,
+        max: 30,
+        step: 0.1,
         value: 0,
+        guiShow: true,
+      },
+      uOpacity: {
+        min: 0,
+        max: 1,
+        step: 0.01,
+        value: 1,
         guiShow: true,
       },
     };
@@ -122,13 +136,31 @@ class Water {
     renderTime += 1;
     if (renderTime >= 100) {
       renderTime = 0;
+      const randomNum = Math.random();
+      let setValue = 0;
+      if (Math.random() < 0.5) {
+        setValue = this.mesh.material.uniforms.uXSpeed.value;
+        if (randomNum < 0.3) {
+          setValue += 0.2;
+        } else {
+          setValue -= 0.1;
+        }
+        if (setValue >= 0) {
+          this.mesh.material.uniforms.uXSpeed.value = setValue;
+        }
+      } else {
+        setValue = this.mesh.material.uniforms.uZSpeed.value;
+        if (randomNum < 0.6) {
+          setValue += 0.1;
+        } else {
+          setValue -= 0.2;
+        }
+        if (setValue >= 0) {
+          this.mesh.material.uniforms.uZSpeed.value = setValue;
+        }
+      }
     }
-    // const {
-    //   uWaveFrequency,
-    // } = this.uniformParams;
-    // this.mesh.material.uniforms.uWaveFrequency.value =
-    //   Math.sin(time / 20) * (uWaveFrequency.max - uWaveFrequency.min) + uWaveFrequency.min;
-    this.mesh.material.uniforms.uTime.value = time;
+    this.mesh.material.uniforms.uTime.value = time / 70;
   }
 }
 
