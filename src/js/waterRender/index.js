@@ -3,6 +3,7 @@ import {
   ShaderMaterial,
   Mesh,
   DoubleSide,
+  Color,
 } from 'three';
 import * as dat from 'dat.gui';
 
@@ -23,6 +24,7 @@ class Water {
         step: 0.001,
         value: 50.1,
         guiShow: true,
+        type: 'number',
       },
       uScale: { // 上下浮动的距离
         min: 0.2,
@@ -30,6 +32,7 @@ class Water {
         step: 0.01,
         value: 1,
         guiShow: true,
+        type: 'number',
       },
       uNoiseScaleScope: { // 噪声发生的密集程度
         min: 320,
@@ -37,6 +40,7 @@ class Water {
         step: 1,
         value: 420,
         guiShow: true,
+        type: 'number',
       },
       uNoiseScaleHeight: { // 噪声的上下浮动的距离
         min: 0.2,
@@ -44,6 +48,7 @@ class Water {
         step: 0.01,
         value: 3.6,
         guiShow: true,
+        type: 'number',
       },
       uNoiseSpeed: {
         min: 10,
@@ -51,10 +56,12 @@ class Water {
         step: 1,
         value: 25,
         guiShow: true,
+        type: 'number',
       },
       uTime: {
         value: 0,
         guiShow: false,
+        type: 'number',
       },
       uXSpeed: {
         min: 0,
@@ -62,6 +69,7 @@ class Water {
         step: 0.1,
         value: 0,
         guiShow: true,
+        type: 'number',
       },
       uZSpeed: {
         min: 0,
@@ -69,6 +77,17 @@ class Water {
         step: 0.1,
         value: 0,
         guiShow: true,
+        type: 'number',
+      },
+      uHighColor: {
+        value: '#FFFF00',
+        guiShow: true,
+        type: 'color',
+      },
+      uLowerColor: {
+        value: '#FF0000',
+        guiShow: true,
+        type: 'color',
       },
       uOpacity: {
         min: 0,
@@ -76,6 +95,7 @@ class Water {
         step: 0.01,
         value: 1,
         guiShow: true,
+        type: 'number',
       },
     };
 
@@ -93,23 +113,41 @@ class Water {
           max,
           step,
           guiShow,
+          type,
         },
       ] = item;
-      if (
-        typeof min === 'number'
-        && typeof max === 'number'
-        && typeof step === 'number'
-        && guiShow
-      ) {
-        gui
-          .add(this.uniformParams[propName], 'value')
-          .min(min)
-          .max(max)
-          .step(step)
-          .name(propName)
-          .onChange((val) => {
-            this.mesh.material.uniforms[propName].value = val;
-          });
+      if (!guiShow) return;
+      switch(type) {
+        case 'number':
+          if (
+            typeof min === 'number'
+            && typeof max === 'number'
+            && typeof step === 'number'
+          ) {
+            gui
+              .add(this.uniformParams[propName], 'value')
+              .min(min)
+              .max(max)
+              .step(step)
+              .name(propName)
+              .onChange((val) => {
+                this.mesh.material.uniforms[propName].value = val;
+              });
+          }
+          break;
+        case 'color':
+          gui
+            .addColor(this.uniformParams[propName], 'value')
+            .name(propName)
+            .onChange((val) => {
+              this.mesh.material.uniforms[propName].value = new Color(val);
+            })
+            .onFinishChange((val) => {
+              console.log('color finish', val);
+            });
+          break;
+        default:
+          break;
       }
     });
   }
@@ -121,7 +159,14 @@ class Water {
       fragmentShader,
       side: DoubleSide,
       uniforms: Object.entries(this.uniformParams).reduce((val, item) => {
-        val[item[0]] = { value: item[1].value };
+        switch(item[1].type) {
+          case 'number':
+            val[item[0]] = { value: item[1].value };
+            break;
+          case 'color':
+            val[item[0]] = { value: new Color(item[1].value) };
+            break;
+        }
         return val;
       }, {}),
     });
