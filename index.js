@@ -66,7 +66,7 @@ function animeRender() {
   const nowTime = clock.getElapsedTime();
 
   // lantern.render(nowTime, nowTime - _oldTime);
-  waterRender.render(nowTime);
+  waterRender.render(nowTime, nowTime - _oldTime);
   renderer.render(scene, camera);
 
   _oldTime = nowTime;

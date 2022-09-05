@@ -11,6 +11,7 @@ import vertexShader from './shader/vertex.vs.glsl';
 import fragmentShader from './shader/fragment.fs.glsl';
 
 let renderTime = 0;
+let renderTimeLength = 0;
 
 class Water {
   constructor(val) {
@@ -18,6 +19,11 @@ class Water {
     this.scene = scene;
 
     this.uniformParams = {
+      isMoving: {
+        value: true,
+        guiShow: true,
+        type: 'boolean',
+      },
       uWaveFrequency: { // 波浪大的运动轨迹
         min: 50.04,
         max: 50.187,
@@ -146,6 +152,11 @@ class Water {
               console.log('color finish', val);
             });
           break;
+        case 'boolean':
+          gui
+            .add(this.uniformParams[propName], 'value')
+            .name(propName);
+          break;
         default:
           break;
       }
@@ -177,7 +188,7 @@ class Water {
     this.setDatGui();
   }
 
-  render(time) {
+  render(time, interval) {
     renderTime += 1;
     if (renderTime >= 100) {
       renderTime = 0;
@@ -205,7 +216,10 @@ class Water {
         }
       }
     }
-    this.mesh.material.uniforms.uTime.value = time / 70;
+    if (this.uniformParams.isMoving.value) {
+      renderTimeLength += interval;
+      this.mesh.material.uniforms.uTime.value = renderTimeLength / 70;
+    }
   }
 }
 
