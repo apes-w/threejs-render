@@ -14,7 +14,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import MainRender from './src/js/mainRender/main';
 // eslint-disable-next-line
 import LanternRender from './src/js/lanternRender';
+// eslint-disable-next-line
 import WaterRender from './src/js/waterRender';
+import ParticleRender from './src/js/particleRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -57,7 +59,9 @@ const controls = new OrbitControls(camera, renderer.domElement);
 //   },
 // );
 // eslint-disable-next-line
-const waterRender = new WaterRender({ scene });
+// const waterRender = new WaterRender({ scene });
+
+const particleRender = new ParticleRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -66,7 +70,8 @@ function animeRender() {
   const nowTime = clock.getElapsedTime();
 
   // lantern.render(nowTime, nowTime - _oldTime);
-  waterRender.render(nowTime, nowTime - _oldTime);
+  // waterRender.render(nowTime, nowTime - _oldTime);
+
   renderer.render(scene, camera);
 
   _oldTime = nowTime;
