@@ -61,6 +61,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // eslint-disable-next-line
 // const waterRender = new WaterRender({ scene });
 
+// eslint-disable-next-line
 const particleRender = new ParticleRender({ scene });
 
 const clock = new Clock();
