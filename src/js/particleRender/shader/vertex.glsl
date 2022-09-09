@@ -8,9 +8,19 @@ varying vec2 vUv;
 
 void main() {
   vUv = uv;
+  /*
+    把物体放到世界坐标系中，物体就可以实现旋转、位移、放大缩小的操作
+    确定了视点、观察点坐标和上方向（即经过视图矩阵的变换），就可以确定人眼看到物体时的样子
+    经过投影矩阵的变化，可以把人眼观察到的三维物体转换到二维平面上，这样就可以显示在屏幕上
+  */
+  // sourcePosition 是顶点初始的位置
+  vec4 sourcePosition = vec4(position, 1.0);
+  // modelPosition 是经过 模型矩阵 的变换之后，在世界坐标系中的位置
+  vec4 modelPosition = modelMatrix * sourcePosition;
+  // viewPosition 是经过 视图矩阵 转换之后，在视图坐标系中的位置
+  vec4 viewPosition = viewMatrix * modelPosition;
+  // 最后经过投影矩阵的转换，才会显示到二维平面上
+  gl_Position = projectionMatrix * viewPosition;
 
-  vec4 resultPosition = modelMatrix * vec4(position, 1.0);
-  gl_Position = projectionMatrix * viewMatrix * resultPosition;
-
-  gl_PointSize = 60.0;
+  gl_PointSize = 20.0;
 }
