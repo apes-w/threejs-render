@@ -5,6 +5,7 @@ import {
   // PointsMaterial,
   Points,
   TextureLoader,
+  AdditiveBlending,
 } from 'three';
 
 import vertex from './shader/vertex.glsl';
@@ -69,6 +70,8 @@ class Particle {
     const material = new ShaderMaterial({
       vertexShader: vertex,
       fragmentShader: fragment,
+      vertexColors: true,
+      blending: AdditiveBlending,
       transparent: true,
       uniforms: {
         uTexture: {

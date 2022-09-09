@@ -26,5 +26,6 @@ void main() {
   // 最后经过投影矩阵的转换，才会显示到二维平面上
   gl_Position = projectionMatrix * viewPosition;
 
-  gl_PointSize = 20.0;
+  // 根据物体距离摄像机的位置，控制渲染的大小
+  gl_PointSize = 40.0 / -viewPosition.z * 30.0;
 }
