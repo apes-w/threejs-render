@@ -23,5 +23,8 @@ void main() {
 
   // 加载纹理
   vec4 textureColor = texture2D(uTexture, gl_PointCoord);
-  gl_FragColor = textureColor;
+  // gl_FragColor = textureColor;
+  // 实现黑色的部分透明渲染
+  // 需要在threejs的material开启transparent
+  gl_FragColor = vec4(textureColor.rgb, textureColor.r);
 }

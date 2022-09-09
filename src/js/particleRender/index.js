@@ -61,6 +61,7 @@ class Particle {
     const material = new ShaderMaterial({
       vertexShader: vertex,
       fragmentShader: fragment,
+      transparent: true,
       uniforms: {
         uTexture: {
           value: texture,
