@@ -73,6 +73,8 @@ function animeRender() {
   // lantern.render(nowTime, nowTime - _oldTime);
   // waterRender.render(nowTime, nowTime - _oldTime);
 
+  particleRender.render(nowTime);
+
   renderer.render(scene, camera);
 
   _oldTime = nowTime;

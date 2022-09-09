@@ -65,7 +65,7 @@ class Particle {
 
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(position, 3));
-    geometry.setAttribute('imgIndex', new BufferAttribute(imgIndex, 1))
+    geometry.setAttribute('imgIndex', new BufferAttribute(imgIndex, 1));
 
     const material = new ShaderMaterial({
       vertexShader: vertex,
@@ -83,14 +83,19 @@ class Particle {
         uTexture2: {
           value: texture2,
         },
+        uTime: {
+          value: 0,
+        },
       },
     });
 
-    const point = new Points(geometry, material);
-    this.scene.add(point);
+    this.point = new Points(geometry, material);
+    this.scene.add(this.point);
   }
 
-  render() {}
+  render(time) {
+    this.point.material.uniforms.uTime.value = time;
+  }
 }
 
 export default Particle;

@@ -6,6 +6,8 @@ precision mediump float;
 
 attribute int imgIndex;
 
+uniform float uTime;
+
 varying vec2 vUv;
 varying float vImgIndex;
 
@@ -21,6 +23,19 @@ void main() {
   vec4 sourcePosition = vec4(position, 1.0);
   // modelPosition 是经过 模型矩阵 的变换之后，在世界坐标系中的位置
   vec4 modelPosition = modelMatrix * sourcePosition;
+
+  // 实现旋转的动效
+  // 获取旋转的顶点
+  float angle = atan(modelPosition.x, modelPosition.z);
+  // 获取旋转的定点到中心点的距离
+  float distanceToCenter = length(modelPosition.xz);
+  float angleOffset = 1.0 / distanceToCenter * uTime * 8.0;
+
+  angle += angleOffset;
+
+  modelPosition.x = cos(angle) * distanceToCenter;
+  modelPosition.z = sin(angle) * distanceToCenter;
+
   // viewPosition 是经过 视图矩阵 转换之后，在视图坐标系中的位置
   vec4 viewPosition = viewMatrix * modelPosition;
   // 最后经过投影矩阵的转换，才会显示到二维平面上
