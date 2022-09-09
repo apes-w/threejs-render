@@ -4,10 +4,14 @@ precision mediump float;
 // mediump 中精度 -2^10 - 2^10
 // highp 高精度 -2^16 - 2^16
 
+attribute int imgIndex;
+
 varying vec2 vUv;
+varying float vImgIndex;
 
 void main() {
   vUv = uv;
+  vImgIndex = float(imgIndex);
   /*
     把物体放到世界坐标系中，物体就可以实现旋转、位移、放大缩小的操作
     确定了视点、观察点坐标和上方向（即经过视图矩阵的变换），就可以确定人眼看到物体时的样子

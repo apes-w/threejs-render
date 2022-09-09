@@ -11,6 +11,8 @@ import vertex from './shader/vertex.glsl';
 import fragment from './shader/fragment.glsl';
 
 import pointImg from '@/assets/image/particles/1.png';
+import pointImg1 from '@/assets/image/particles/9.png';
+import pointImg2 from '@/assets/image/particles/11.png';
 
 const textureLoader = new TextureLoader();
 
@@ -37,8 +39,11 @@ class Particle {
 
     // 加载 点 的纹理
     const texture = textureLoader.load(pointImg);
+    const texture1 = textureLoader.load(pointImg1);
+    const texture2 = textureLoader.load(pointImg2);
 
     const position = new Float32Array(count * 3);
+    const imgIndex = new Int32Array(count);
     for (let i = 0; i < count; i++) {
       // 计算出当前的点需要在第几条星臂上
       const branchAngel = (i % branch) * (Math.PI * 2 / branch);
@@ -53,10 +58,13 @@ class Particle {
       position[i * 3] = Math.cos(branchAngel) * radiusLength + randomX;
       position[i * 3 + 1] = randomY;
       position[i * 3 + 2] = Math.sin(branchAngel) * radiusLength + randomZ;
+
+      imgIndex[i] = i % 3;
     }
 
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(position, 3));
+    geometry.setAttribute('imgIndex', new BufferAttribute(imgIndex, 1))
 
     const material = new ShaderMaterial({
       vertexShader: vertex,
@@ -65,6 +73,12 @@ class Particle {
       uniforms: {
         uTexture: {
           value: texture,
+        },
+        uTexture1: {
+          value: texture1,
+        },
+        uTexture2: {
+          value: texture2,
         },
       },
     });
