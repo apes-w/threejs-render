@@ -4,6 +4,7 @@ import {
   PerspectiveCamera,
   AxesHelper,
   PointLight,
+  AmbientLight,
   WebGLRenderer,
   sRGBEncoding,
   ACESFilmicToneMapping,
@@ -16,7 +17,9 @@ import MainRender from './src/js/mainRender/main';
 import LanternRender from './src/js/lanternRender';
 // eslint-disable-next-line
 import WaterRender from './src/js/waterRender';
+// eslint-disable-next-line
 import ParticleRender from './src/js/particleRender';
+import FireworksRender from './src/js/fireworksRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -30,9 +33,14 @@ const camera = new PerspectiveCamera(
 camera.position.set(60, 30, 80);
 camera.lookAt(scene.position);
 
+// 点光源
 const light = new PointLight(0xffffff, 2, 1000);
-light.position.set(0, 100, 10);
+light.position.set(30, 30, 50);
 scene.add(light);
+
+// 环境光
+const ambientLight = new AmbientLight(0xffffff, 0.4);
+scene.add(ambientLight);
 
 const axesHelper = new AxesHelper(30);
 scene.add(axesHelper);
@@ -62,7 +70,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const waterRender = new WaterRender({ scene });
 
 // eslint-disable-next-line
-const particleRender = new ParticleRender({ scene });
+// const particleRender = new ParticleRender({ scene });
+
+// eslint-disable-next-line
+const fireworksRender = new FireworksRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -73,7 +84,9 @@ function animeRender() {
   // lantern.render(nowTime, nowTime - _oldTime);
   // waterRender.render(nowTime, nowTime - _oldTime);
 
-  particleRender.render(nowTime);
+  // particleRender.render(nowTime);
+
+  fireworksRender.render(nowTime, nowTime - _oldTime);
 
   renderer.render(scene, camera);
 
@@ -82,3 +95,9 @@ function animeRender() {
 }
 
 animeRender();
+
+window.addEventListener('click', () => {
+  console.log('触发点击事件');
+
+  fireworksRender.handleClick();
+});
