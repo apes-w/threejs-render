@@ -8,11 +8,11 @@ void main() {
   vec4 sourcePosition = vec4(position, 1.0);
   vec4 modelPosition = modelMatrix * sourcePosition;
 
-  float moveLength = aLength * 10.0;
+  // float moveLength = aLength * 130.0;
   // modelPosition.xyz += aDirection * aLength * 10.0;
-  modelPosition.x = cos(aDirectionX) * moveLength;
-  modelPosition.z = sin(aDirectionX) * moveLength;
-  modelPosition.y = sin(aDirectionY) * moveLength;
+  modelPosition.x = sourcePosition.x + cos(aDirectionX) * aLength;
+  modelPosition.y = sourcePosition.y + sin(aDirectionY) * aLength;
+  modelPosition.z = sourcePosition.z + sin(aDirectionX) * aLength;
 
   vec4 viewPosition = viewMatrix * modelPosition;
 
