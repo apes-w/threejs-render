@@ -6,7 +6,6 @@ import {
   BufferGeometry,
   Points,
   BufferAttribute,
-  Vector3,
 } from 'three';
 
 import vertexShader from './shader/fireworks/vertex.glsl';
@@ -80,7 +79,7 @@ class Fireworks{
 
   // 生成烟花爆炸的效果
   // 使用的参数为烟花消失的位置
-  generateFireworksExplorer(endPosition, length) {
+  generateFireworksExplorer(endPosition) {
     const { x, y, z } = endPosition;
     const geometry = new BufferGeometry();
 
@@ -118,7 +117,6 @@ class Fireworks{
     });
 
     const points = new Points(geometry, material);
-    console.log(points);
     this.fireworksExplorerList.push(points);
     this.scene.add(points);
   }
@@ -151,8 +149,7 @@ class Fireworks{
         const x = length * Math.cos(directionX);
         const y = length * Math.sin(directionY);
         const z = length * Math.sin(directionX);
-        // console.log(x, y, z);
-        this.generateFireworksExplorer({ x, y, z }, length);
+        this.generateFireworksExplorer({ x, y, z });
 
       } else {
         item.geometry.setAttribute('aLength', new BufferAttribute(newLength, 1));
