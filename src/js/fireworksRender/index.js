@@ -17,10 +17,14 @@ import pointTex from '@/assets/image/particles/1.png';
 const textureLoader = new TextureLoader();
 
 const getRandomColor = () => {
-  const r = Math.round(Math.random() * 255);
-  const g = Math.round(Math.random() * 255);
-  const b = Math.round(Math.random() * 255);
-  return new Color(`rgb(${r},${g},${b})`);
+  // const r = Math.round(Math.random() * 255);
+  // const g = Math.round(Math.random() * 255);
+  // const b = Math.round(Math.random() * 255);
+  // return new Color(`rgb(${r},${g},${b})`);
+  const h = Math.round(Math.random() * 360);
+  const s = Math.round(Math.random() * 20 + 60);
+  const l = Math.round(Math.random() * 20 + 60);
+  return new Color(`hsl(${h},${s}%,${l}%)`);
 }
 
 class Fireworks{
@@ -85,8 +89,6 @@ class Fireworks{
       'aColor',
       new BufferAttribute(new Float32Array([randomColor.r, randomColor.g, randomColor.b]), 3)
     );
-
-    console.log(getRandomColor());
 
     const material = new ShaderMaterial({
       uniforms: {
