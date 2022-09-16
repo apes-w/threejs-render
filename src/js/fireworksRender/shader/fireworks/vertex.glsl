@@ -3,8 +3,12 @@ precision mediump float;
 attribute float aLength;
 attribute float aDirectionX;
 attribute float aDirectionY;
+attribute vec3 aColor;
+
+varying vec3 vColor;
 
 void main() {
+  vColor = aColor;
   vec4 sourcePosition = vec4(position, 1.0);
   vec4 modelPosition = modelMatrix * sourcePosition;
 
@@ -17,5 +21,5 @@ void main() {
   vec4 viewPosition = viewMatrix * modelPosition;
 
   gl_Position = projectionMatrix * viewPosition;
-  gl_PointSize = 10.0;
+  gl_PointSize = 14.0;
 }

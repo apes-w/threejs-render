@@ -6,10 +6,22 @@ import {
   BufferGeometry,
   Points,
   BufferAttribute,
+  TextureLoader,
+  Color,
 } from 'three';
 
 import vertexShader from './shader/fireworks/vertex.glsl';
 import fragmentShader from './shader/fireworks/fragment.glsl';
+import pointTex from '@/assets/image/particles/1.png';
+
+const textureLoader = new TextureLoader();
+
+const getRandomColor = () => {
+  const r = Math.round(Math.random() * 255);
+  const g = Math.round(Math.random() * 255);
+  const b = Math.round(Math.random() * 255);
+  return new Color(`rgb(${r},${g},${b})`);
+}
 
 class Fireworks{
   constructor(val) {
@@ -20,6 +32,9 @@ class Fireworks{
     this.fireworksList = [];
     // 烟花爆炸效果的mesh
     this.fireworksExplorerList = [];
+
+    // 加载纹理
+    this.pointTexture = textureLoader.load(pointTex);
 
     this.init();
   }
@@ -65,11 +80,23 @@ class Fireworks{
 
     const aLengthArr = new Float32Array([0]);
     geometry.setAttribute('aLength', new BufferAttribute(aLengthArr, 1));
+    const randomColor = getRandomColor();
+    geometry.setAttribute(
+      'aColor',
+      new BufferAttribute(new Float32Array([randomColor.r, randomColor.g, randomColor.b]), 3)
+    );
+
+    console.log(getRandomColor());
 
     const material = new ShaderMaterial({
+      uniforms: {
+        uTexture: {
+          value: this.pointTexture,
+        },
+      },
       vertexShader,
       fragmentShader,
-      uniforms: {},
+      transparent: true,
     });
 
     const points = new Points(geometry, material);
@@ -87,6 +114,7 @@ class Fireworks{
     const position = new Float32Array(fireworksExplorerCount * 3);
     const aDirectionXArr = new Float32Array(fireworksExplorerCount);
     const aDirectionYArr = new Float32Array(fireworksExplorerCount);
+    const randomColorArr = new Float32Array(fireworksExplorerCount * 3);
     // 设置初始位置
     for (let i = 0; i < fireworksExplorerCount; i++) {
       position[i * 3] = x;
@@ -97,23 +125,47 @@ class Fireworks{
       const beta = Math.random() * 2 * Math.PI; // 竖直方向上的任意角度
       aDirectionXArr[i] = theta;
       aDirectionYArr[i] = beta;
+
+      const randomColor = getRandomColor();
+      randomColorArr[i * 3] = randomColor.r;
+      randomColorArr[i * 3 + 1] = randomColor.g;
+      randomColorArr[i * 3 + 2] = randomColor.b;
       if (!geometry.userData.speed) {
         geometry.userData.speed = [];
       }
       geometry.userData.speed.push(Math.random() * 0.2 + 0.1);
     }
-    geometry.setAttribute('position', new BufferAttribute(position, 3));
-    geometry.setAttribute('aDirectionX', new BufferAttribute(aDirectionXArr, 1));
-    geometry.setAttribute('aDirectionY', new BufferAttribute(aDirectionYArr, 1));
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(position, 3),
+    );
+    geometry.setAttribute(
+      'aDirectionX',
+      new BufferAttribute(aDirectionXArr, 1),
+    );
+    geometry.setAttribute(
+      'aDirectionY',
+      new BufferAttribute(aDirectionYArr, 1),
+    );
     geometry.setAttribute(
       'aLength',
       new BufferAttribute(new Float32Array(new Array(fireworksExplorerCount).fill(0)), 1),
     );
+    geometry.setAttribute(
+      'aColor',
+      new BufferAttribute(randomColorArr, 3),
+    );
     geometry.userData.times = 0;
 
     const material = new ShaderMaterial({
+      uniforms: {
+        uTexture: {
+          value: this.pointTexture,
+        },
+      },
       vertexShader,
       fragmentShader,
+      transparent: true,
     });
 
     const points = new Points(geometry, material);
