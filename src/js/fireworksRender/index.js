@@ -25,7 +25,7 @@ const getRandomColor = () => {
   const s = Math.round(Math.random() * 20 + 60);
   const l = Math.round(Math.random() * 20 + 60);
   return new Color(`hsl(${h},${s}%,${l}%)`);
-}
+};
 
 class Fireworks{
   constructor(val) {
@@ -36,6 +36,7 @@ class Fireworks{
     this.fireworksList = [];
     // 烟花爆炸效果的mesh
     this.fireworksExplorerList = [];
+    this.fireDisappearFireworksList = [];
 
     // 加载纹理
     this.pointTexture = textureLoader.load(pointTex);
@@ -135,7 +136,7 @@ class Fireworks{
       if (!geometry.userData.speed) {
         geometry.userData.speed = [];
       }
-      geometry.userData.speed.push(Math.random() * 0.2 + 0.1);
+      geometry.userData.speed.push(Math.random() * 0.46 + 0.1);
     }
     geometry.setAttribute(
       'position',
@@ -221,8 +222,9 @@ class Fireworks{
         return mapRes;
       });
 
+      // todo - 当前绽放的效果，类似于一个纸筒的效果，未实现球的爆炸效果
       item.geometry.userData.times += 1;
-      if (item.geometry.userData.times > 100) {
+      if (item.geometry.userData.times > 80) {
         item.visible = false;
         item.geometry.dispose();
         item.material.dispose();
@@ -233,6 +235,11 @@ class Fireworks{
       }
       return val;
     }, []);
+    // 烟花逐渐消失的效果
+    // this.fireDisappearFireworksList = this.fireDisappearFireworksList.reduce((val, item) => {
+
+    //   return val
+    // }, []);
   }
 }
 
