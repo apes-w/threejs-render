@@ -19,7 +19,9 @@ import LanternRender from './src/js/lanternRender';
 import WaterRender from './src/js/waterRender';
 // eslint-disable-next-line
 import ParticleRender from './src/js/particleRender';
+// eslint-disable-next-line
 import FireworksRender from './src/js/fireworksRender';
+import RepeatCubeRender from './src/js/repeatCube';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -73,7 +75,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const particleRender = new ParticleRender({ scene });
 
 // eslint-disable-next-line
-const fireworksRender = new FireworksRender({ scene });
+// const fireworksRender = new FireworksRender({ scene });
+
+// eslint-disable-next-line
+const repeatCubeRender = new RepeatCubeRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -86,7 +91,7 @@ function animeRender() {
 
   // particleRender.render(nowTime);
 
-  fireworksRender.render(nowTime, nowTime - _oldTime);
+  // fireworksRender.render(nowTime, nowTime - _oldTime);
 
   renderer.render(scene, camera);
 
@@ -99,5 +104,5 @@ animeRender();
 window.addEventListener('click', () => {
   console.log('触发点击事件');
 
-  fireworksRender.handleClick();
+  // fireworksRender.handleClick();
 });
