@@ -14,9 +14,10 @@ void main() {
 
   // float moveLength = aLength * 130.0;
   // modelPosition.xyz += aDirection * aLength * 10.0;
-  modelPosition.x = sourcePosition.x + cos(aDirectionX) * aLength;
+  float xozLength = cos(aDirectionY) * aLength;
+  modelPosition.x = sourcePosition.x + cos(aDirectionX) * xozLength;
   modelPosition.y = sourcePosition.y + sin(aDirectionY) * aLength;
-  modelPosition.z = sourcePosition.z + sin(aDirectionX) * aLength;
+  modelPosition.z = sourcePosition.z + sin(aDirectionX) * xozLength;
 
   vec4 viewPosition = viewMatrix * modelPosition;
 

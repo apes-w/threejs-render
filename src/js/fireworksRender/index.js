@@ -201,9 +201,10 @@ class Fireworks{
         const length = oldLength[0];
         const directionX = item.geometry.getAttribute('aDirectionX').array[0];
         const directionY = item.geometry.getAttribute('aDirectionY').array[0];
-        const x = length * Math.cos(directionX);
+        const xozLength = Math.cos(directionY) * length;
+        const x = xozLength * Math.cos(directionX);
         const y = length * Math.sin(directionY);
-        const z = length * Math.sin(directionX);
+        const z = xozLength * Math.sin(directionX);
         this.generateFireworksExplorer({ x, y, z });
 
       } else {
