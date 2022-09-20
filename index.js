@@ -21,7 +21,10 @@ import WaterRender from './src/js/waterRender';
 import ParticleRender from './src/js/particleRender';
 // eslint-disable-next-line
 import FireworksRender from './src/js/fireworksRender';
+// eslint-disable-next-line
 import RepeatCubeRender from './src/js/repeatCube';
+// eslint-disable-next-line
+import RepeatCubeShaderRender from './src/js/repeatCube/shaderTex';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -78,7 +81,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const fireworksRender = new FireworksRender({ scene });
 
 // eslint-disable-next-line
-const repeatCubeRender = new RepeatCubeRender({ scene });
+// const repeatCubeRender = new RepeatCubeRender({ scene });
+
+// eslint-disable-next-line
+const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
