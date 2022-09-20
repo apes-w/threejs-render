@@ -1,17 +1,11 @@
 import {
   BoxGeometry,
-  MeshLambertMaterial,
   Mesh,
-  TextureLoader,
   Texture,
   MeshBasicMaterial,
-  CubeReflectionMapping,
-  CubeRefractionMapping,
   RepeatWrapping,
 } from 'three';
 import mergeImg from '@/assets/image/merge.png';
-
-const textureLoader = new TextureLoader();
 
 class CubeRender {
   constructor(val) {
@@ -37,7 +31,7 @@ class CubeRender {
 
       const mesh = new Mesh(geometry, materialList);
       this.scene.add(mesh);
-    }
+    };
   }
 
   generateMaterial(e, image) {
@@ -50,7 +44,7 @@ class CubeRender {
     const newCanvasSize = 100;
     // 需要绘制的图片的大小
     const renderImageSize = Math.pow(Math.pow(newCanvasSize, 2) / 2, 0.5);
-    const startLocation = (newCanvasSize - renderImageSize) / 2;
+    // const startLocation = (newCanvasSize - renderImageSize) / 2;
 
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 2; j++) {
