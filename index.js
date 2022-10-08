@@ -25,6 +25,8 @@ import FireworksRender from './src/js/fireworksRender';
 import RepeatCubeRender from './src/js/repeatCube';
 // eslint-disable-next-line
 import RepeatCubeShaderRender from './src/js/repeatCube/shaderTex';
+// eslint-disable-next-line
+import SplitCubeRender from './src/js/splitCubeRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -84,7 +86,13 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const repeatCubeRender = new RepeatCubeRender({ scene });
 
 // eslint-disable-next-line
-const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
+// const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
+
+// eslint-disable-next-line
+const { width, height } = renderer.domElement.getBoundingClientRect();
+const splitCubeRender = new SplitCubeRender(
+  { scene },
+);
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -117,6 +125,8 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   // 设置渲染器的像素比例
   renderer.setPixelRatio(window.devicePixelRatio);
+
+  splitCubeRender.handleResize();
 });
 
 // 整体的点击事件
