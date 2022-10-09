@@ -8,7 +8,7 @@ import {
   WebGLRenderer,
   sRGBEncoding,
   ACESFilmicToneMapping,
-  MOUSE,
+  // MOUSE,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
@@ -28,6 +28,8 @@ import RepeatCubeRender from './src/js/repeatCube';
 import RepeatCubeShaderRender from './src/js/repeatCube/shaderTex';
 // eslint-disable-next-line
 import SplitCubeRender from './src/js/splitCubeRender';
+// eslint-disable-next-line
+import DecorationDesignRender from './src/js/decorationDesignRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -64,10 +66,10 @@ renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效�
 // 添加轨道控制器
 // eslint-disable-next-line
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.mouseButtons = {
-  MIDDLE: MOUSE.DOLLY,
-  RIGHT: MOUSE.ROTATE,
-};
+// controls.mouseButtons = {
+//   MIDDLE: MOUSE.DOLLY,
+//   RIGHT: MOUSE.ROTATE,
+// };
 
 // const mainRender = new MainRender({ scene });
 // const lantern = new LanternRender(
@@ -94,9 +96,11 @@ controls.mouseButtons = {
 // const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 
 // eslint-disable-next-line
-const splitCubeRender = new SplitCubeRender(
-  { scene },
-);
+// const splitCubeRender = new SplitCubeRender(
+//   { scene },
+// );
+
+const decorationDesignRender = new DecorationDesignRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -131,7 +135,7 @@ window.addEventListener('resize', () => {
   // 设置渲染器的像素比例
   renderer.setPixelRatio(window.devicePixelRatio);
 
-  splitCubeRender.handleResize();
+  // splitCubeRender.handleResize();
 });
 
 // 整体的点击事件
@@ -144,11 +148,11 @@ window.addEventListener('click', () => {
 // 监听键盘
 window.addEventListener('keydown', (e) => {
   console.log('键盘按下');
-  splitCubeRender.handleKeyDown(e);
+  // splitCubeRender.handleKeyDown(e);
 });
 
 // 监听键盘
 window.addEventListener('keyup', (e) => {
   console.log('键盘抬起');
-  splitCubeRender.handleKeyUp(e);
+  // splitCubeRender.handleKeyUp(e);
 });
