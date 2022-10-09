@@ -1,19 +1,18 @@
 precision mediump float;
 
-uniform float uSceneWidth;
+uniform sampler2D uTexture;
+uniform float uHorizontalOffset;
 
 varying vec2 vUv;
+varying vec3 vPosition;
 
 void main() {
-  /*
-    gl_FragCoord
-      是根据绘制图形时，使用的canvas标签的大小位置进行设置的
-      我当前将绘制threejs使用的canvas所占的大小为整个浏览器整个界面大小
-      之后应该可以根据这个实现一个分屏的操作
-  */
-  if (gl_FragCoord.x < uSceneWidth / 2.0) {
-    gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-  } else {
+  // gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+
+  vec4 textureColor = texture2D(uTexture, vUv);
+  if (vPosition.x > 0.0 + uHorizontalOffset) {
     gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+  } else {
+    gl_FragColor = textureColor;
   }
 }

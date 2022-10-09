@@ -3,7 +3,7 @@ import {
   TextureLoader,
   ShaderMaterial,
   Mesh,
-  BufferAttribute,
+  // BufferAttribute,
 } from 'three';
 
 import vertexShader from './shader/vertexShader.glsl';

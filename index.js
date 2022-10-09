@@ -8,6 +8,7 @@ import {
   WebGLRenderer,
   sRGBEncoding,
   ACESFilmicToneMapping,
+  MOUSE,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
@@ -63,6 +64,10 @@ renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效�
 // 添加轨道控制器
 // eslint-disable-next-line
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.mouseButtons = {
+  MIDDLE: MOUSE.DOLLY,
+  RIGHT: MOUSE.ROTATE,
+};
 
 // const mainRender = new MainRender({ scene });
 // const lantern = new LanternRender(
@@ -89,7 +94,6 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 
 // eslint-disable-next-line
-const { width, height } = renderer.domElement.getBoundingClientRect();
 const splitCubeRender = new SplitCubeRender(
   { scene },
 );
@@ -115,6 +119,7 @@ function animeRender() {
 
 animeRender();
 
+// 监听页面缩放
 window.addEventListener('resize', () => {
   // 更新摄像头
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -134,4 +139,16 @@ window.addEventListener('click', () => {
   console.log('触发点击事件');
 
   // fireworksRender.handleClick();
+});
+
+// 监听键盘
+window.addEventListener('keydown', (e) => {
+  console.log('键盘按下');
+  splitCubeRender.handleKeyDown(e);
+});
+
+// 监听键盘
+window.addEventListener('keyup', (e) => {
+  console.log('键盘抬起');
+  splitCubeRender.handleKeyUp(e);
 });
