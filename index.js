@@ -100,7 +100,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 //   { scene },
 // );
 
-const decorationDesignRender = new DecorationDesignRender({ scene });
+const decorationDesignRender = new DecorationDesignRender({ scene, camera });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -139,13 +139,13 @@ window.addEventListener('resize', () => {
 });
 
 // 整体的点击事件
-window.addEventListener('click', () => {
+window.addEventListener('click', (e) => {
   console.log('触发点击事件');
-
   // fireworksRender.handleClick();
+  decorationDesignRender.handleClick(e);
 });
 
-// 监听键盘
+// 监听键盘- 按下 - 长按会一直触发这个事件
 window.addEventListener('keydown', (e) => {
   console.log('键盘按下');
   // splitCubeRender.handleKeyDown(e);

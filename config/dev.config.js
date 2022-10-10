@@ -11,6 +11,8 @@ const devServer = {
   hot: true,
 };
 
+const runProjectMsg = `project is running at http://${devServer.host}:${devServer.port}`;
+
 const devConfig = {
   mode: 'development',
   devtool: 'source-map',
@@ -46,12 +48,13 @@ const devConfig = {
     new FriendlyErrorsWebpackPlugin({
       compilationSuccessInfo: {
         // message: [],
-        messages: [`project is running at http://${devServer.host}:${devServer.port}`],
+        messages: [runProjectMsg],
         notes: [],
       },
       onErrors(severity, errors) {
         // serverity的取值有 error、warning
         // 可以在这里监听项目运行的错误和警告
+        console.log(runProjectMsg);
       },
       // clearConsole: false, // 默认值为true，效果看起来是清空一次控制台打印
       additionalFormatters: [],
