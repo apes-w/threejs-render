@@ -8,8 +8,12 @@ import {
   MeshBasicMaterial,
   Raycaster,
   Vector2,
+  TextureLoader,
 } from 'three';
 import * as dat from 'dat.gui';
+import assetImage from '@/assets/image/five.jpeg';
+
+const textureLoader = new TextureLoader();
 
 class DecorationDesignRender {
   constructor(val) {
@@ -26,6 +30,7 @@ class DecorationDesignRender {
   }
 
   init() {
+    const imgTex = textureLoader.load(assetImage);
     // const diagonal = Math.pow(Math.pow(4, 2) + Math.pow(40, 2), 0.5);
     for (let i = 0; i < 4; i++) {
       const material = new MeshStandardMaterial({
@@ -39,6 +44,9 @@ class DecorationDesignRender {
         wallGeometry = new BoxGeometry(60 - 4, 40, 4);
       }
       const uniforms = {
+        uTexture: {
+          value: imgTex,
+        },
         uCardSize: {
           value: 6,
         },
@@ -53,6 +61,8 @@ class DecorationDesignRender {
         },
       };
       material.onBeforeCompile = (shader) => {
+        console.log(shader.vertexShader);
+        console.log(shader.fragmentShader);
         shader.uniforms = {
           ...shader.uniforms,
           ...uniforms,
@@ -61,6 +71,13 @@ class DecorationDesignRender {
         // 顶点着色器
         // 变量的初始化，包括使用defined、uniform、attribute、varying
         shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
+        shader.vertexShader = shader.vertexShader.replace(
+          'void main() {',
+          `
+          // custom func end
+          void main() {
+          `
+        );
         shader.vertexShader = shader.vertexShader.replace(
           'vWorldPosition = worldPosition.xyz;',
           `
@@ -73,12 +90,21 @@ class DecorationDesignRender {
         // 变量的初始化，包括使用defined、uniform、attribute、varying
         shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
         shader.fragmentShader = shader.fragmentShader.replace(
+          'void main() {',
+          `
+          // custom func end
+          void main() {
+          `
+        );
+        shader.fragmentShader = shader.fragmentShader.replace(
           '#include <dithering_fragment>',
           `
           #include <dithering_fragment>
           // void main end
           `
         );
+        // 添加根据纹理获取渲染效果的函数
+        shader.fragmentShader = this.handleSetTexRender(shader.fragmentShader);
         // 片元着色器，针对于点击位置进行渲染的逻辑
         shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
       };
@@ -234,8 +260,25 @@ class DecorationDesignRender {
       uniform vec2 uPointUV;
       uniform vec3 uUpFace;
       uniform vec3 uIntersectPoint;
+      uniform sampler2D uTexture;
       #include <common>
       // uniform params end
+      `
+    );
+
+    return res;
+  }
+
+  handleSetTexRender(fragment) {
+    let res = fragment.replace(
+      '// custom func end',
+      `
+      vec4 getTexColor(const in vec2 nowPoint, const in vec2 realPoint) {
+        float x = (nowPoint.x - realPoint.x + uCardSize) / (uCardSize * 2.0);
+        float y = (nowPoint.y - realPoint.y + uCardSize) / (uCardSize * 2.0);
+        return texture2D(uTexture, vec2(x, y));
+      }
+      // custom func end
       `
     );
 
@@ -275,7 +318,8 @@ class DecorationDesignRender {
             )
             && (abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
           ) {
-            gl_FragColor = cardColor;
+            // gl_FragColor = cardColor;
+            gl_FragColor = getTexColor(vWorldPosition.zy, uIntersectPoint.zy);
           } else if (
             (
               ( // y轴正方向上
@@ -290,7 +334,8 @@ class DecorationDesignRender {
             )
             && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize)
           ) {
-            gl_FragColor = cardColor;
+            // gl_FragColor = cardColor;
+            gl_FragColor = getTexColor(vWorldPosition.xz, uIntersectPoint.xz);
           } else if (
             (
               ( // z轴正方向上
@@ -305,7 +350,8 @@ class DecorationDesignRender {
             )
             && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
           ) {
-            gl_FragColor = cardColor;
+            // gl_FragColor = cardColor;
+            gl_FragColor = getTexColor(vWorldPosition.xy, uIntersectPoint.xy);
           }
         }
       }
