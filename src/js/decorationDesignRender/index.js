@@ -40,7 +40,7 @@ class DecorationDesignRender {
       }
       const uniforms = {
         uCardSize: {
-          value: 0.2, // 当前是依据uv进行设置，之后要做修改
+          value: 6,
         },
         uPointUV: {
           value: new Vector2(-1, -1),
@@ -81,7 +81,7 @@ class DecorationDesignRender {
         );
         // 片元着色器，针对于点击位置进行渲染的逻辑
         shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
-      }
+      };
 
       // this.changeWallMaterial(material, uniforms);
       this.uniformList.push(uniforms);
@@ -144,7 +144,7 @@ class DecorationDesignRender {
     const geometry = new BoxGeometry(10, 10, 10);
     const uniforms = {
       uCardSize: {
-        value: 0.2, // 当前是依据uv进行设置，之后要做修改
+        value: 6,
       },
       uPointUV: {
         value: new Vector2(-1, -1),
@@ -185,7 +185,7 @@ class DecorationDesignRender {
       );
       // 片元着色器，针对于点击位置进行渲染的逻辑
       shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
-    }
+    };
 
     // this.changeWallMaterial(material, uniforms);
     const mesh = new Mesh(geometry, material);
@@ -251,52 +251,59 @@ class DecorationDesignRender {
       vec4 cardColor = vec4(1.0, 0.0, 0.0, 1.0);
       if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
         if (
-          abs(uPointUV.x - vUv.x) <= uCardSize
-          && abs(uPointUV.y - vUv.y) <= uCardSize
-          && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
+          // abs(uPointUV.x - vUv.x) <= uCardSize
+          // && abs(uPointUV.y - vUv.y) <= uCardSize
+          // && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
+
+          (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0) // 选择了几何体的面
         ) {
           vec3 xAxesVec = vec3(1.0, 0.0, 0.0);
           vec3 yAxesVec = vec3(0.0, 1.0, 0.0);
           vec3 zAxesVec = vec3(0.0, 0.0, 1.0);
 
           if (
-            ( // x轴正方向
-              dot(uUpFace, xAxesVec) > 0.0
-              && dot(vWorldPosition, xAxesVec) >= dot(uIntersectPoint, xAxesVec) - deviation
+            (
+              ( // x轴正方向
+                dot(uUpFace, xAxesVec) > 0.0
+                && dot(vWorldPosition, xAxesVec) >= dot(uIntersectPoint, xAxesVec) - deviation
+              )
+              ||
+              ( // x轴负方向
+                dot(uUpFace, xAxesVec) < 0.0
+                && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
+              )
             )
-            ||
-            ( // x轴负方向
-              dot(uUpFace, xAxesVec) < 0.0
-              && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
-            )
+            && (abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
           ) {
             gl_FragColor = cardColor;
-          }
-
-          if (
-            ( // y轴正方向上
-              dot(uUpFace, yAxesVec) > 0.0
-              && dot(vWorldPosition, yAxesVec) >= dot(uIntersectPoint, yAxesVec) - deviation
+          } else if (
+            (
+              ( // y轴正方向上
+                dot(uUpFace, yAxesVec) > 0.0
+                && dot(vWorldPosition, yAxesVec) >= dot(uIntersectPoint, yAxesVec) - deviation
+              )
+              ||
+              ( // y轴负方向上
+                dot(uUpFace, yAxesVec) < 0.0
+                && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
+              )
             )
-            ||
-            ( // y轴负方向上
-              dot(uUpFace, yAxesVec) < 0.0
-              && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
-            )
+            && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize)
           ) {
             gl_FragColor = cardColor;
-          }
-
-          if (
-            ( // z轴正方向上
-              dot(uUpFace, zAxesVec) > 0.0
-              && dot(vWorldPosition, zAxesVec) >= dot(uIntersectPoint, zAxesVec) - deviation
+          } else if (
+            (
+              ( // z轴正方向上
+                dot(uUpFace, zAxesVec) > 0.0
+                && dot(vWorldPosition, zAxesVec) >= dot(uIntersectPoint, zAxesVec) - deviation
+              )
+              ||
+              ( // z轴负方向上
+                dot(uUpFace, zAxesVec) < 0.0
+                && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
+              )
             )
-            ||
-            ( // z轴负方向上
-              dot(uUpFace, zAxesVec) < 0.0
-              && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
-            )
+            && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
           ) {
             gl_FragColor = cardColor;
           }
@@ -342,6 +349,10 @@ class DecorationDesignRender {
     const interArr = ray.intersectObjects(this.wallMeshList);
     console.log(interArr);
     // todo ------ 在物体的mesh经过旋转之后，使用这个逻辑渲染就会有问题
+    // 已修复
+    // 在经过mesh的旋转之后，point的点和face对应的法向量之间有差距
+    // face的法向量是相对于物体本身的向量方向
+    // point的点是相对于物体在世界坐标系中的位置
     if (interArr.length) {
       // 第一个相交的物体
       const [
