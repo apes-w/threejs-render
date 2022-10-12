@@ -20,8 +20,8 @@ class DecorationDesignRender {
     this.pillarMeshList = [];
     this.uniformList = [];
 
-    // this.init();
-    this.debugInit();
+    this.init();
+    // this.debugInit();
     this.guiInit();
   }
 
@@ -32,7 +32,12 @@ class DecorationDesignRender {
         color: new Color('#D8BFD8'),
       });
       // 墙体
-      const wallGeometry = new BoxGeometry(4, 40, 60 - 4);
+      let wallGeometry = null;
+      if (i < 2) {
+        wallGeometry = new BoxGeometry(4, 40, 60 - 4);
+      } else {
+        wallGeometry = new BoxGeometry(60 - 4, 40, 4);
+      }
       const uniforms = {
         uCardSize: {
           value: 0.2, // 当前是依据uv进行设置，之后要做修改
@@ -47,8 +52,38 @@ class DecorationDesignRender {
           value: new Vector3(0, 0, 0),
         },
       };
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms = {
+          ...shader.uniforms,
+          ...uniforms,
+        };
+  
+        // 顶点着色器
+        // 变量的初始化，包括使用defined、uniform、attribute、varying
+        shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
+        shader.vertexShader = shader.vertexShader.replace(
+          'vWorldPosition = worldPosition.xyz;',
+          `
+          vWorldPosition = worldPosition.xyz;
+          // void main end
+          `
+        );
+  
+        // 片元着色器
+        // 变量的初始化，包括使用defined、uniform、attribute、varying
+        shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <dithering_fragment>',
+          `
+          #include <dithering_fragment>
+          // void main end
+          `
+        );
+        // 片元着色器，针对于点击位置进行渲染的逻辑
+        shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
+      }
 
-      this.changeWallMaterial(material, uniforms);
+      // this.changeWallMaterial(material, uniforms);
       this.uniformList.push(uniforms);
 
       const mesh = new Mesh(wallGeometry, material);
@@ -60,17 +95,17 @@ class DecorationDesignRender {
       this.wallMeshList.push(mesh);
       this.scene.add(mesh);
     }
-    this.wallMeshList[0].translateOnAxis(new Vector3(1, 0, 0), 30);
-    this.wallMeshList[1].translateOnAxis(new Vector3(-1, 0, 0), 30);
     /*
       可以理解为，物体本身也有一个xyz的坐标系
       在旋转物体的时候，物体自身的坐标轴也会跟着一起进行旋转
       移动旋转之后的物体对应的方向，也是依据于物体自身的坐标轴方向
     */
+    this.wallMeshList[0].translateOnAxis(new Vector3(1, 0, 0), 30);
+    this.wallMeshList[1].translateOnAxis(new Vector3(-1, 0, 0), 30);
     this.wallMeshList[2].translateOnAxis(new Vector3(0, 0, 1), 30);
-    this.wallMeshList[2].rotateY(Math.PI / 2);
+    // this.wallMeshList[2].rotateY(Math.PI / 2);
     this.wallMeshList[3].translateOnAxis(new Vector3(0, 0, -1), 30);
-    this.wallMeshList[3].rotateY(Math.PI / 2);
+    // this.wallMeshList[3].rotateY(Math.PI / 2);
 
     // 墙角的柱子
     for (let i = 0; i < 4; i++) {
@@ -105,7 +140,8 @@ class DecorationDesignRender {
       color: new Color('#D8BFD8'),
     });
     // 墙体
-    const geometry = new BoxGeometry(30, 40, 50);
+    // const geometry = new BoxGeometry(30, 40, 50);
+    const geometry = new BoxGeometry(10, 10, 10);
     const uniforms = {
       uCardSize: {
         value: 0.2, // 当前是依据uv进行设置，之后要做修改
@@ -120,10 +156,41 @@ class DecorationDesignRender {
         value: new Vector3(0, 0, 0),
       },
     };
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms = {
+        ...shader.uniforms,
+        ...uniforms,
+      };
 
-    this.changeWallMaterial(material, uniforms);
+      // 顶点着色器
+      // 变量的初始化，包括使用defined、uniform、attribute、varying
+      shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
+      shader.vertexShader = shader.vertexShader.replace(
+        'vWorldPosition = worldPosition.xyz;',
+        `
+        vWorldPosition = worldPosition.xyz;
+        // void main end
+        `
+      );
+
+      // 片元着色器
+      // 变量的初始化，包括使用defined、uniform、attribute、varying
+      shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `
+        #include <dithering_fragment>
+        // void main end
+        `
+      );
+      // 片元着色器，针对于点击位置进行渲染的逻辑
+      shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
+    }
+
+    // this.changeWallMaterial(material, uniforms);
     const mesh = new Mesh(geometry, material);
-    mesh.translateOnAxis(new Vector3(1, 0, 0), 10);
+    // mesh.rotateY(Math.PI / 2);
+    // mesh.translateOnAxis(new Vector3(1, 0, 0), 10);
     this.wallMeshList.push(mesh);
     this.uniformList.push(uniforms);
     this.scene.add(mesh);
@@ -134,124 +201,112 @@ class DecorationDesignRender {
     gui.width = 300;
   }
 
-  // 修改墙体的材质
-  changeWallMaterial(material, uniforms) {
-    material.onBeforeCompile = (shader) => {
-      console.log('vertexShader', shader.vertexShader);
-      console.log('fragmentShader', shader.fragmentShader);
+  vertexConstantInit(vertex) {
+    let res = vertex.replace(
+      '#define STANDARD',
+      `
+      #define USE_UV true;
+      #define USE_TRANSMISSION true;
+      // custom defined end
+      #define STANDARD
+      `
+    );
 
-      shader.uniforms = {
-        ...shader.uniforms,
-        ...uniforms,
-      };
+    return res;
+  }
 
-      // 使用define定义变量
-      shader.vertexShader = shader.vertexShader.replace(
-        '#define STANDARD',
-        `
-        #define USE_UV true;
-        #define USE_TRANSMISSION true;
-        // custom defined end
-        #define STANDARD
-        `
-      );
+  fragmentConstantInit(fragment) {
+    let res = fragment.replace(
+      '#define STANDARD',
+      `
+      #define USE_UV true;
+      #define USE_TRANSMISSION true;
+      #define PHYSICAL true;
+      // custom defined end
+      #define STANDARD
+      `
+    );
 
-      // 使用define定义变量
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#define STANDARD',
-        `
-        #define USE_UV true;
-        #define USE_TRANSMISSION true;
-        #define PHYSICAL true;
-        // custom defined end
-        #define STANDARD
-        `
-      );
+    res = res.replace(
+      '#include <common>',
+      `
+      uniform float uCardSize;
+      uniform vec2 uPointUV;
+      uniform vec3 uUpFace;
+      uniform vec3 uIntersectPoint;
+      #include <common>
+      // uniform params end
+      `
+    );
 
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <common>',
-        `
-        uniform float uCardSize;
-        uniform vec2 uPointUV;
-        uniform vec3 uUpFace;
-        uniform vec3 uIntersectPoint;
-        #include <common>
-        // uniform params end
-        `
-      );
+    return res;
+  }
 
-      shader.vertexShader = shader.vertexShader.replace(
-        'vWorldPosition = worldPosition.xyz;',
-        `
-        vWorldPosition = worldPosition.xyz;
-        // void main end
-        `
-      );
+  handleRenderClickArea(fragment) {
+    let res = fragment.replace(
+      '// void main end',
+      `
+      // vWorldPosition
+      float deviation = 0.0001;
+      vec4 cardColor = vec4(1.0, 0.0, 0.0, 1.0);
+      if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
+        if (
+          abs(uPointUV.x - vUv.x) <= uCardSize
+          && abs(uPointUV.y - vUv.y) <= uCardSize
+          && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
+        ) {
+          vec3 xAxesVec = vec3(1.0, 0.0, 0.0);
+          vec3 yAxesVec = vec3(0.0, 1.0, 0.0);
+          vec3 zAxesVec = vec3(0.0, 0.0, 1.0);
 
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <dithering_fragment>',
-        `
-        #include <dithering_fragment>
-        // vWorldPosition
-        float deviation = 0.0001;
-        vec4 cardColor = vec4(1.0, 0.0, 0.0, 1.0);
-        if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
           if (
-            abs(uPointUV.x - vUv.x) <= uCardSize
-            && abs(uPointUV.y - vUv.y) <= uCardSize
-            && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
+            ( // x轴正方向
+              dot(uUpFace, xAxesVec) > 0.0
+              && dot(vWorldPosition, xAxesVec) >= dot(uIntersectPoint, xAxesVec) - deviation
+            )
+            ||
+            ( // x轴负方向
+              dot(uUpFace, xAxesVec) < 0.0
+              && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
+            )
           ) {
-            vec3 xAxesVec = vec3(1.0, 0.0, 0.0);
-            vec3 yAxesVec = vec3(0.0, 1.0, 0.0);
-            vec3 zAxesVec = vec3(0.0, 0.0, 1.0);
+            gl_FragColor = cardColor;
+          }
 
-            if (
-              ( // x轴正方向
-                dot(uUpFace, xAxesVec) > 0.0
-                && dot(vWorldPosition, xAxesVec) >= dot(uIntersectPoint, xAxesVec) - deviation
-              )
-              ||
-              ( // x轴负方向
-                dot(uUpFace, xAxesVec) < 0.0
-                && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
-              )
-            ) {
-              gl_FragColor = cardColor;
-            }
+          if (
+            ( // y轴正方向上
+              dot(uUpFace, yAxesVec) > 0.0
+              && dot(vWorldPosition, yAxesVec) >= dot(uIntersectPoint, yAxesVec) - deviation
+            )
+            ||
+            ( // y轴负方向上
+              dot(uUpFace, yAxesVec) < 0.0
+              && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
+            )
+          ) {
+            gl_FragColor = cardColor;
+          }
 
-            if (
-              ( // y轴正方向上
-                dot(uUpFace, yAxesVec) > 0.0
-                && dot(vWorldPosition, yAxesVec) >= dot(uIntersectPoint, yAxesVec) - deviation
-              )
-              ||
-              ( // y轴负方向上
-                dot(uUpFace, yAxesVec) < 0.0
-                && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
-              )
-            ) {
-              gl_FragColor = cardColor;
-            }
-
-            if (
-              ( // z轴正方向上
-                dot(uUpFace, zAxesVec) > 0.0
-                && dot(vWorldPosition, zAxesVec) >= dot(uIntersectPoint, zAxesVec) - deviation
-              )
-              ||
-              ( // z轴负方向上
-                dot(uUpFace, zAxesVec) < 0.0
-                && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
-              )
-            ) {
-              gl_FragColor = cardColor;
-            }
+          if (
+            ( // z轴正方向上
+              dot(uUpFace, zAxesVec) > 0.0
+              && dot(vWorldPosition, zAxesVec) >= dot(uIntersectPoint, zAxesVec) - deviation
+            )
+            ||
+            ( // z轴负方向上
+              dot(uUpFace, zAxesVec) < 0.0
+              && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
+            )
+          ) {
+            gl_FragColor = cardColor;
           }
         }
-        // void main end
-        `
-      );
-    };
+      }
+      // void main end
+      `
+    );
+
+    return res;
   }
 
   // 根据相机位置和在屏幕上点击的位置生成一条射线
@@ -268,22 +323,6 @@ class DecorationDesignRender {
   handleClick(e) {
     const ray = this.getRaycaster(e.clientX, e.clientY);
 
-    const interArr = ray.intersectObjects(this.wallMeshList);
-    console.log(interArr);
-    if (interArr.length) {
-      // 第一个相交的物体
-      const [
-        {
-          face, // 相交的点，存在于物体的哪一个面上
-          point,
-          uv,
-        },
-      ] = interArr;
-      this.uniformList[0].uPointUV.value = uv;
-      this.uniformList[0].uUpFace.value = face.normal;
-      this.uniformList[0].uIntersectPoint.value = point;
-    }
-
     // const interArr = ray.intersectObjects(this.wallMeshList);
     // console.log(interArr);
     // if (interArr.length) {
@@ -291,16 +330,33 @@ class DecorationDesignRender {
     //   const [
     //     {
     //       face, // 相交的点，存在于物体的哪一个面上
-    //       object,
     //       point,
     //       uv,
     //     },
     //   ] = interArr;
-    //   const { meshIndex } = object.userData;
-    //   this.uniformList[meshIndex].uPointUV.value = uv;
-    //   this.uniformList[meshIndex].uUpFace.value = face.normal;
-    //   this.uniformList[meshIndex].uIntersectPoint.value = point;
+    //   this.uniformList[0].uPointUV.value = uv;
+    //   this.uniformList[0].uUpFace.value = face.normal;
+    //   this.uniformList[0].uIntersectPoint.value = point;
     // }
+
+    const interArr = ray.intersectObjects(this.wallMeshList);
+    console.log(interArr);
+    // todo ------ 在物体的mesh经过旋转之后，使用这个逻辑渲染就会有问题
+    if (interArr.length) {
+      // 第一个相交的物体
+      const [
+        {
+          face, // 相交的点，存在于物体的哪一个面上
+          object,
+          point,
+          uv,
+        },
+      ] = interArr;
+      const { meshIndex } = object.userData;
+      this.uniformList[meshIndex].uPointUV.value = uv;
+      this.uniformList[meshIndex].uUpFace.value = face.normal;
+      this.uniformList[meshIndex].uIntersectPoint.value = point;
+    }
   }
 }
 
