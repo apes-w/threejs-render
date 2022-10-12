@@ -20,11 +20,13 @@ class DecorationDesignRender {
     this.pillarMeshList = [];
     this.uniformList = [];
 
-    this.init();
+    // this.init();
+    this.debugInit();
     this.guiInit();
   }
 
   init() {
+    // const diagonal = Math.pow(Math.pow(4, 2) + Math.pow(40, 2), 0.5);
     for (let i = 0; i < 4; i++) {
       const material = new MeshStandardMaterial({
         color: new Color('#D8BFD8'),
@@ -38,9 +40,15 @@ class DecorationDesignRender {
         uPointUV: {
           value: new Vector2(-1, -1),
         },
+        uUpFace: { // 当前点击面对应的法向量
+          value: new Vector3(0, 0, 0),
+        },
+        uIntersectPoint: {
+          value: new Vector3(0, 0, 0),
+        },
       };
 
-      this.changeMaterial(material, uniforms);
+      this.changeWallMaterial(material, uniforms);
       this.uniformList.push(uniforms);
 
       const mesh = new Mesh(wallGeometry, material);
@@ -53,16 +61,7 @@ class DecorationDesignRender {
       this.scene.add(mesh);
     }
     this.wallMeshList[0].translateOnAxis(new Vector3(1, 0, 0), 30);
-    // 添加每个墙体可以使用的面
-    this.wallMeshList[0].userData = {
-      ...this.wallMeshList[0].userData,
-      availableFace: [new Vector3(1, 0, 0), new Vector3(-1, 0, 0)],
-    };
     this.wallMeshList[1].translateOnAxis(new Vector3(-1, 0, 0), 30);
-    this.wallMeshList[1].userData = {
-      ...this.wallMeshList[1].userData,
-      availableFace: [new Vector3(1, 0, 0), new Vector3(-1, 0, 0)],
-    };
     /*
       可以理解为，物体本身也有一个xyz的坐标系
       在旋转物体的时候，物体自身的坐标轴也会跟着一起进行旋转
@@ -70,16 +69,8 @@ class DecorationDesignRender {
     */
     this.wallMeshList[2].translateOnAxis(new Vector3(0, 0, 1), 30);
     this.wallMeshList[2].rotateY(Math.PI / 2);
-    this.wallMeshList[2].userData = {
-      ...this.wallMeshList[2].userData,
-      availableFace: [new Vector3(0, 0, 1), new Vector3(0, 0, -1)],
-    };
     this.wallMeshList[3].translateOnAxis(new Vector3(0, 0, -1), 30);
     this.wallMeshList[3].rotateY(Math.PI / 2);
-    this.wallMeshList[3].userData = {
-      ...this.wallMeshList[3].userData,
-      availableFace: [new Vector3(0, 0, 1), new Vector3(0, 0, -1)],
-    };
 
     // 墙角的柱子
     for (let i = 0; i < 4; i++) {
@@ -109,8 +100,33 @@ class DecorationDesignRender {
     this.scene.add(basePlaneMesh);
   }
 
-  // 修改墙体的材质
-  changeWallMaterial(material) {
+  debugInit() {
+    const material = new MeshStandardMaterial({
+      color: new Color('#D8BFD8'),
+    });
+    // 墙体
+    const geometry = new BoxGeometry(30, 40, 50);
+    const uniforms = {
+      uCardSize: {
+        value: 0.2, // 当前是依据uv进行设置，之后要做修改
+      },
+      uPointUV: {
+        value: new Vector2(-1, -1),
+      },
+      uUpFace: { // 当前点击面对应的法向量
+        value: new Vector3(0, 0, 0),
+      },
+      uIntersectPoint: {
+        value: new Vector3(0, 0, 0),
+      },
+    };
+
+    this.changeWallMaterial(material, uniforms);
+    const mesh = new Mesh(geometry, material);
+    mesh.translateOnAxis(new Vector3(1, 0, 0), 10);
+    this.wallMeshList.push(mesh);
+    this.uniformList.push(uniforms);
+    this.scene.add(mesh);
   }
 
   guiInit() {
@@ -118,29 +134,48 @@ class DecorationDesignRender {
     gui.width = 300;
   }
 
-  changeMaterial(material, uniforms) {
+  // 修改墙体的材质
+  changeWallMaterial(material, uniforms) {
     material.onBeforeCompile = (shader) => {
+      console.log('vertexShader', shader.vertexShader);
+      console.log('fragmentShader', shader.fragmentShader);
 
       shader.uniforms = {
         ...shader.uniforms,
         ...uniforms,
       };
 
+      // 使用define定义变量
       shader.vertexShader = shader.vertexShader.replace(
-        '#include <common>',
+        '#define STANDARD',
         `
-        #include <common>
         #define USE_UV true;
+        #define USE_TRANSMISSION true;
+        // custom defined end
+        #define STANDARD
+        `
+      );
+
+      // 使用define定义变量
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#define STANDARD',
+        `
+        #define USE_UV true;
+        #define USE_TRANSMISSION true;
+        #define PHYSICAL true;
+        // custom defined end
+        #define STANDARD
         `
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
         `
-        #include <common>
-        #define USE_UV true;
         uniform float uCardSize;
         uniform vec2 uPointUV;
+        uniform vec3 uUpFace;
+        uniform vec3 uIntersectPoint;
+        #include <common>
         // uniform params end
         `
       );
@@ -157,18 +192,66 @@ class DecorationDesignRender {
         '#include <dithering_fragment>',
         `
         #include <dithering_fragment>
+        // vWorldPosition
+        float deviation = 0.0001;
+        vec4 cardColor = vec4(1.0, 0.0, 0.0, 1.0);
         if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
           if (
             abs(uPointUV.x - vUv.x) <= uCardSize
             && abs(uPointUV.y - vUv.y) <= uCardSize
+            && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
           ) {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            vec3 xAxesVec = vec3(1.0, 0.0, 0.0);
+            vec3 yAxesVec = vec3(0.0, 1.0, 0.0);
+            vec3 zAxesVec = vec3(0.0, 0.0, 1.0);
+
+            if (
+              ( // x轴正方向
+                dot(uUpFace, xAxesVec) > 0.0
+                && dot(vWorldPosition, xAxesVec) >= dot(uIntersectPoint, xAxesVec) - deviation
+              )
+              ||
+              ( // x轴负方向
+                dot(uUpFace, xAxesVec) < 0.0
+                && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
+              )
+            ) {
+              gl_FragColor = cardColor;
+            }
+
+            if (
+              ( // y轴正方向上
+                dot(uUpFace, yAxesVec) > 0.0
+                && dot(vWorldPosition, yAxesVec) >= dot(uIntersectPoint, yAxesVec) - deviation
+              )
+              ||
+              ( // y轴负方向上
+                dot(uUpFace, yAxesVec) < 0.0
+                && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
+              )
+            ) {
+              gl_FragColor = cardColor;
+            }
+
+            if (
+              ( // z轴正方向上
+                dot(uUpFace, zAxesVec) > 0.0
+                && dot(vWorldPosition, zAxesVec) >= dot(uIntersectPoint, zAxesVec) - deviation
+              )
+              ||
+              ( // z轴负方向上
+                dot(uUpFace, zAxesVec) < 0.0
+                && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
+              )
+            ) {
+              gl_FragColor = cardColor;
+            }
           }
         }
         // void main end
         `
       );
-    }
+    };
   }
 
   // 根据相机位置和在屏幕上点击的位置生成一条射线
@@ -184,20 +267,40 @@ class DecorationDesignRender {
 
   handleClick(e) {
     const ray = this.getRaycaster(e.clientX, e.clientY);
+
     const interArr = ray.intersectObjects(this.wallMeshList);
+    console.log(interArr);
     if (interArr.length) {
       // 第一个相交的物体
       const [
         {
           face, // 相交的点，存在于物体的哪一个面上
-          object, // 相交的物体
-          point, // 相交的点的坐标
+          point,
           uv,
         },
       ] = interArr;
-      const { meshIndex } = object.userData;
-      this.uniformList[meshIndex].uPointUV.value = uv;
+      this.uniformList[0].uPointUV.value = uv;
+      this.uniformList[0].uUpFace.value = face.normal;
+      this.uniformList[0].uIntersectPoint.value = point;
     }
+
+    // const interArr = ray.intersectObjects(this.wallMeshList);
+    // console.log(interArr);
+    // if (interArr.length) {
+    //   // 第一个相交的物体
+    //   const [
+    //     {
+    //       face, // 相交的点，存在于物体的哪一个面上
+    //       object,
+    //       point,
+    //       uv,
+    //     },
+    //   ] = interArr;
+    //   const { meshIndex } = object.userData;
+    //   this.uniformList[meshIndex].uPointUV.value = uv;
+    //   this.uniformList[meshIndex].uUpFace.value = face.normal;
+    //   this.uniformList[meshIndex].uIntersectPoint.value = point;
+    // }
   }
 }
 
