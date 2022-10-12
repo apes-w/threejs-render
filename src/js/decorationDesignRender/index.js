@@ -233,7 +233,6 @@ class DecorationDesignRender {
       `
       #define USE_UV true;
       #define USE_TRANSMISSION true;
-      // custom defined end
       #define STANDARD
       `
     );
@@ -248,7 +247,6 @@ class DecorationDesignRender {
       #define USE_UV true;
       #define USE_TRANSMISSION true;
       #define PHYSICAL true;
-      // custom defined end
       #define STANDARD
       `
     );
