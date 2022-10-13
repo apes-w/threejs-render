@@ -101,6 +101,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // );
 
 const decorationDesignRender = new DecorationDesignRender({ scene, camera });
+decorationDesignRender.setControlMode(controls);
 
 const clock = new Clock();
 // eslint-disable-next-line

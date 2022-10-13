@@ -9,6 +9,7 @@ import {
   Raycaster,
   Vector2,
   TextureLoader,
+  MOUSE,
 } from 'three';
 import * as dat from 'dat.gui';
 import assetImage from '@/assets/image/five.jpeg';
@@ -222,6 +223,13 @@ class DecorationDesignRender {
     this.scene.add(mesh);
   }
 
+  setControlMode(control) {
+    control.mouseButtons = {
+      RIGHT: MOUSE.ROTATE,
+      MIDDLE: MOUSE.DOLLY,
+    };
+  }
+
   guiInit() {
     const gui = new dat.GUI();
     gui.width = 300;
@@ -272,8 +280,8 @@ class DecorationDesignRender {
       '// custom func end',
       `
       vec4 getTexColor(const in vec2 nowPoint, const in vec2 realPoint) {
-        float x = (nowPoint.x - realPoint.x + uCardSize) / (uCardSize * 2.0);
-        float y = (nowPoint.y - realPoint.y + uCardSize) / (uCardSize * 2.0);
+        float x = (nowPoint.x - realPoint.x + uCardSize / 2.0) / uCardSize;
+        float y = (nowPoint.y - realPoint.y + uCardSize / 2.0) / uCardSize;
         return texture2D(uTexture, vec2(x, y));
       }
       // custom func end
@@ -292,10 +300,6 @@ class DecorationDesignRender {
       vec4 cardColor = vec4(1.0, 0.0, 0.0, 1.0);
       if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
         if (
-          // abs(uPointUV.x - vUv.x) <= uCardSize
-          // && abs(uPointUV.y - vUv.y) <= uCardSize
-          // && (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0)
-
           (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0) // 选择了几何体的面
         ) {
           vec3 xAxesVec = vec3(1.0, 0.0, 0.0);
@@ -314,7 +318,10 @@ class DecorationDesignRender {
                 && dot(vWorldPosition, xAxesVec) <= dot(uIntersectPoint, xAxesVec) + deviation
               )
             )
-            && (abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
+            && (
+              abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize / 2.0
+              && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize / 2.0
+            )
           ) {
             // gl_FragColor = cardColor;
             gl_FragColor = getTexColor(vWorldPosition.zy, uIntersectPoint.zy);
@@ -330,7 +337,10 @@ class DecorationDesignRender {
                 && dot(vWorldPosition, yAxesVec) <= dot(uIntersectPoint, yAxesVec) + deviation
               )
             )
-            && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize)
+            && (
+              abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize / 2.0
+              && abs(vWorldPosition.z - uIntersectPoint.z) <= uCardSize / 2.0
+            )
           ) {
             // gl_FragColor = cardColor;
             gl_FragColor = getTexColor(vWorldPosition.xz, uIntersectPoint.xz);
@@ -346,7 +356,10 @@ class DecorationDesignRender {
                 && dot(vWorldPosition, zAxesVec) <= dot(uIntersectPoint, zAxesVec) + deviation
               )
             )
-            && (abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize)
+            && (
+              abs(vWorldPosition.x - uIntersectPoint.x) <= uCardSize / 2.0
+              && abs(vWorldPosition.y - uIntersectPoint.y) <= uCardSize / 2.0
+            )
           ) {
             // gl_FragColor = cardColor;
             gl_FragColor = getTexColor(vWorldPosition.xy, uIntersectPoint.xy);
