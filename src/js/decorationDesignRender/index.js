@@ -16,6 +16,15 @@ import assetImage from '@/assets/image/five.jpeg';
 
 const textureLoader = new TextureLoader();
 
+/*
+  装修移动墙体的思路
+  可以生成两套模型，一套是完成的带有墙体和柱子的模型
+  在需要自定义墙体的位置时，可以隐藏墙体和柱子
+  另外生成一套用来代表墙体和柱子的平面
+  然后对平面进行操作，包括添加、移动、删除这些的操作
+  在操作结束之后，根据平面的位置，生成新的墙体和柱子
+*/
+
 class DecorationDesignRender {
   constructor(val) {
     const { scene, camera } = val;
