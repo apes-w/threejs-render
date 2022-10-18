@@ -1,6 +1,7 @@
 import {
   BoxGeometry,
   PlaneGeometry,
+  ExtrudeGeometry,
   MeshStandardMaterial,
   Mesh,
   Color,
@@ -10,6 +11,8 @@ import {
   Vector2,
   TextureLoader,
   MOUSE,
+  Shape,
+  LineCurve3,
 } from 'three';
 import * as dat from 'dat.gui';
 import assetImage from '@/assets/image/five.jpeg';
@@ -20,6 +23,8 @@ const textureLoader = new TextureLoader();
 const wallColor = new Color('#D8BFD8');
 // 墙角的柱子的颜色
 const pillarColor = new Color('#ADD8E6');
+// 度数 - 1°
+const singleRad = Math.PI / 180;
 
 /*
   装修移动墙体的思路
@@ -48,6 +53,52 @@ class DecorationDesignRender {
     // this.init();
     this.debugInit();
     this.guiInit();
+  }
+
+  // 以坐标原点为中心
+  // 可以理解为平行四边形挤压出的几何体
+  /**
+   * 
+   * @param {Number} length 长边的长度
+   * @param {Number} angle 内部小角的大小
+   * @param {Number} axesAngle 长边相对于x轴正方向的长度
+   */
+  getLineGeometry(length, angle = Math.PI / 2, axesAngle = 0) {
+    // 使用挤压几何体之后，定义的方向的角度是依据于z轴负方向绘制的
+
+    // 深度为 40
+    const width = 6; // 平行四边形较窄的边的默认长度
+    const depth = 40;
+    const shape = new Shape();
+    // const diagonalLength = (length + Math.cos(angle))
+    const diagonalVec = new Vector2(length, 0).add(new Vector2(width * Math.cos(angle), width * Math.sin(angle)));
+    const diagonalLength = diagonalVec.length();
+    const diagonalAngle = diagonalVec.angle();
+    shape.moveTo(0, 0);
+    // shape.lineTo(length, 0);
+    shape.lineTo(
+      length * Math.cos(axesAngle),
+      length * Math.sin(axesAngle),
+    );
+    shape.lineTo(
+      diagonalLength * Math.cos(diagonalAngle + axesAngle),
+      diagonalLength * Math.sin(diagonalAngle + axesAngle),
+    );
+    shape.lineTo(
+      width * Math.cos(angle + axesAngle),
+      width * Math.sin(angle + axesAngle),
+    );
+    shape.lineTo(0, 0);
+
+    return new ExtrudeGeometry(shape, {
+      steps: 3,
+      bevelThickness: 0,
+      bevelSize: 0,
+      extrudePath: new LineCurve3(
+        new Vector3(0, 0, 0),
+        new Vector3(0, depth, 0),
+      ),
+    });
   }
 
   init() {
@@ -220,41 +271,42 @@ class DecorationDesignRender {
     const material = new MeshStandardMaterial({
       color: wallColor,
     });
-    const geometry = new BoxGeometry(30, 40, 50);
+    // const geometry = new BoxGeometry(30, 40, 50);
+    const geometry = this.getLineGeometry(50, singleRad * 40, -singleRad * 76);
+    console.log(geometry);
     const position = geometry.getAttribute('position').array;
-    const uniforms = {
-      uMaxGeoSize: {
-        value: new Vector3(
-          Math.abs(position[0]),
-          Math.abs(position[1]),
-          Math.abs(position[2]),
-        ),
-      },
-      uTexture: {
-        value: imgTex,
-      },
-      uCardSize: {
-        value: 6,
-      },
-      uPointUV: {
-        value: new Vector2(-1, -1),
-      },
-      uUpFace: { // 当前点击面对应的法向量
-        value: new Vector3(0, 0, 0),
-      },
-      uIntersectPoint: {
-        value: new Vector3(0, 0, 0),
-      },
-    };
+    // const uniforms = {
+    //   uMaxGeoSize: {
+    //     value: new Vector3(
+    //       Math.abs(position[0]),
+    //       Math.abs(position[1]),
+    //       Math.abs(position[2]),
+    //     ),
+    //   },
+    //   uTexture: {
+    //     value: imgTex,
+    //   },
+    //   uCardSize: {
+    //     value: 6,
+    //   },
+    //   uPointUV: {
+    //     value: new Vector2(-1, -1),
+    //   },
+    //   uUpFace: { // 当前点击面对应的法向量
+    //     value: new Vector3(0, 0, 0),
+    //   },
+    //   uIntersectPoint: {
+    //     value: new Vector3(0, 0, 0),
+    //   },
+    // };
 
-    this.debugUniformParams = uniforms;
+    // this.debugUniformParams = uniforms;
 
     material.onBeforeCompile = (shader) => {
-      console.log(shader.vertexShader);
-      console.log(shader.fragmentShader);
+      console.log('vertexShader', shader.vertexShader);
+      console.log('fragmentShader', shader.fragmentShader);
       shader.uniforms = {
         ...shader.uniforms,
-        ...uniforms,
       };
 
       // 顶点着色器
@@ -292,16 +344,6 @@ class DecorationDesignRender {
         // void main end
         `
       );
-      // 添加根据纹理获取渲染效果的函数
-      shader.fragmentShader = this.handleSetTexRender(shader.fragmentShader);
-      // 添加验证方向的函数，当前逻辑可以理解校验坐标轴的正负方向是否为法向量
-      shader.fragmentShader = this.handleCheckFace(shader.fragmentShader);
-      // 实现边缘校验的操作，生成新的中心点
-      shader.fragmentShader = this.handleGetRealCenterPoint(shader.fragmentShader);
-      // 添加获取一个方形区域的函数
-      shader.fragmentShader = this.handleGetCardArea(shader.fragmentShader);
-      // 片元着色器，针对于点击位置进行渲染的逻辑
-      shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
     };
 
     const mesh = new Mesh(geometry, material);
@@ -359,6 +401,7 @@ class DecorationDesignRender {
       `
       #define USE_UV true;
       #define USE_TRANSMISSION true;
+      #define FLAT_SHADED true;
       #define STANDARD
       `
     );
@@ -373,6 +416,7 @@ class DecorationDesignRender {
       #define USE_UV true;
       #define USE_TRANSMISSION true;
       #define PHYSICAL true;
+      #define FLAT_SHADED true;
       #define STANDARD
       `
     );
