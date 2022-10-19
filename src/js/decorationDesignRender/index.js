@@ -35,6 +35,11 @@ const singleRad = Math.PI / 180;
   在操作结束之后，根据平面的位置，生成新的墙体和柱子
 */
 
+/*
+  实现了对于debug模型的点击操作之后，修改 threejs 渲染的界面的大小
+  在右边留一部分用于操作按钮的区域
+*/
+
 class DecorationDesignRender {
   constructor(val) {
     const { scene, camera } = val;
@@ -274,39 +279,28 @@ class DecorationDesignRender {
     // const geometry = new BoxGeometry(30, 40, 50);
     const geometry = this.getLineGeometry(50, singleRad * 40, -singleRad * 76);
     console.log(geometry);
-    const position = geometry.getAttribute('position').array;
-    // const uniforms = {
-    //   uMaxGeoSize: {
-    //     value: new Vector3(
-    //       Math.abs(position[0]),
-    //       Math.abs(position[1]),
-    //       Math.abs(position[2]),
-    //     ),
-    //   },
-    //   uTexture: {
-    //     value: imgTex,
-    //   },
-    //   uCardSize: {
-    //     value: 6,
-    //   },
-    //   uPointUV: {
-    //     value: new Vector2(-1, -1),
-    //   },
-    //   uUpFace: { // 当前点击面对应的法向量
-    //     value: new Vector3(0, 0, 0),
-    //   },
-    //   uIntersectPoint: {
-    //     value: new Vector3(0, 0, 0),
-    //   },
-    // };
-
-    // this.debugUniformParams = uniforms;
+    
+    this.debugUniformParams = {
+      uTexture: {
+        value: imgTex,
+      },
+      uFaceNormal: {
+        value: new Vector3(0, 0, 0),
+      },
+      uClickPoint: {
+        value: new Vector3(0, 0, 0),
+      },
+      uCardSize: {
+        value: 6,
+      },
+    };
 
     material.onBeforeCompile = (shader) => {
       console.log('vertexShader', shader.vertexShader);
       console.log('fragmentShader', shader.fragmentShader);
       shader.uniforms = {
         ...shader.uniforms,
+        ...this.debugUniformParams,
       };
 
       // 顶点着色器
@@ -317,12 +311,13 @@ class DecorationDesignRender {
         `
         // custom func end
         void main() {
+        // void main start
         `
       );
       shader.vertexShader = shader.vertexShader.replace(
-        'vWorldPosition = worldPosition.xyz;',
+        '#include <fog_vertex>',
         `
-        vWorldPosition = worldPosition.xyz;
+        #include <fog_vertex>
         // void main end
         `
       );
@@ -335,6 +330,7 @@ class DecorationDesignRender {
         `
         // custom func end
         void main() {
+        // void main start
         `
       );
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -344,6 +340,7 @@ class DecorationDesignRender {
         // void main end
         `
       );
+      shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
     };
 
     const mesh = new Mesh(geometry, material);
@@ -399,10 +396,14 @@ class DecorationDesignRender {
     let res = vertex.replace(
       '#define STANDARD',
       `
-      #define USE_UV true;
-      #define USE_TRANSMISSION true;
-      #define FLAT_SHADED true;
       #define STANDARD
+      `
+    );
+
+    res = res.replace(
+      '#include <common>',
+      `
+      #include <common>
       `
     );
 
@@ -413,10 +414,6 @@ class DecorationDesignRender {
     let res = fragment.replace(
       '#define STANDARD',
       `
-      #define USE_UV true;
-      #define USE_TRANSMISSION true;
-      #define PHYSICAL true;
-      #define FLAT_SHADED true;
       #define STANDARD
       `
     );
@@ -424,121 +421,12 @@ class DecorationDesignRender {
     res = res.replace(
       '#include <common>',
       `
-      uniform vec3 uMaxGeoSize;
-      uniform float uCardSize;
-      uniform vec2 uPointUV;
-      uniform vec3 uUpFace;
-      uniform vec3 uIntersectPoint;
       uniform sampler2D uTexture;
+      uniform vec3 uFaceNormal;
+      uniform vec3 uClickPoint;
+      uniform float uCardSize;
       #include <common>
       // uniform params end
-      `
-    );
-
-    return res;
-  }
-
-  handleSetTexRender(fragment) {
-    let res = fragment.replace(
-      '// custom func end',
-      `
-      vec4 getTexColor(const in vec2 nowPoint, const in vec2 centerPoint) {
-        // 直接计算当前坐标相对于方形区域的长度
-        float x = -0.1;
-        float y = -0.1;
-
-        float diffXCenter = abs(nowPoint.x - centerPoint.x);
-        float diffYCenter = abs(nowPoint.y - centerPoint.y);
-        if (nowPoint.x <= centerPoint.x) {
-          x = uCardSize / 2.0 - diffXCenter;
-        } else {
-          x = uCardSize / 2.0 + diffXCenter;
-        }
-        if (nowPoint.y < centerPoint.y) {
-          y = uCardSize / 2.0 - diffYCenter;
-        } else {
-          y = uCardSize / 2.0 + diffYCenter;
-        }
-
-        vec2 renderVec = vec2(x / uCardSize, y / uCardSize);
-        return texture2D(uTexture, renderVec);
-      }
-      // custom func end
-      `
-    );
-
-    return res;
-  }
-
-  handleCheckFace(fragment) {
-    let res = fragment.replace(
-      '// custom func end',
-      `
-      bool checkFace(const in vec3 axesVec) {
-        float deviation = 0.0001;
-        return ( // 坐标轴正方向
-          dot(uUpFace, axesVec) > 0.0
-          && dot(vWorldPosition, axesVec) >= dot(uIntersectPoint, axesVec) - deviation
-        )
-        ||
-        ( // 坐标轴负方向
-          dot(uUpFace, axesVec) < 0.0
-          && dot(vWorldPosition, axesVec) <= dot(uIntersectPoint, axesVec) + deviation
-        );
-      }
-      // custom func end
-      `
-    );
-
-    return res;
-  }
-
-  handleGetRealCenterPoint(fragment) {
-    let res = fragment.replace(
-      '// custom func end',
-      `
-      vec2 getRealCenterPoint(const in vec2 point, const in vec2 maxSize) {
-        vec2 resultCenterPoint = vec2(point.xy);
-        // 进行边缘校验，判断是否要特殊处理
-        // 边缘校验结束之后，需要拿到新的中心点
-        float diffXSide = maxSize.x - abs(point.x) - uCardSize / 2.0;
-        float diffYSide = maxSize.y - abs(point.y) - uCardSize / 2.0;
-        if (diffXSide < 0.0) {
-          if (point.x > 0.0) {
-            resultCenterPoint.x += diffXSide;
-          } else {
-            resultCenterPoint.x -= diffXSide;
-          }
-        }
-        if (diffYSide < 0.0) {
-          if (point.y > 0.0) {
-            resultCenterPoint.y += diffYSide;
-          } else {
-            resultCenterPoint.y -= diffYSide;
-          }
-        }
-        return resultCenterPoint;
-      }
-      // custom func end
-      `
-    );
-
-    return res;
-  }
-
-  handleGetCardArea(fragment) {
-    let res = fragment.replace(
-      '// custom func end',
-      `
-      bool getCardArea(const in vec2 position, const in vec2 point) {
-        // 普通的校验一个card区域
-        bool sizeBool = (
-          abs(position.x - point.x) <= uCardSize / 2.0
-          && abs(position.y - point.y) <= uCardSize / 2.0
-        );
-        return sizeBool;
-      }
-      // custom func end
       `
     );
 
@@ -549,29 +437,10 @@ class DecorationDesignRender {
     let res = fragment.replace(
       '// void main end',
       `
-      // vWorldPosition
-      if (uPointUV.x >= 0.0 && uPointUV.y >= 0.0) {
-        if (
-          (uUpFace.x != 0.0 || uUpFace.y != 0.0 || uUpFace.z != 0.0) // 选择了几何体的面
-        ) {
-          if (checkFace(vec3(1.0, 0.0, 0.0))) { // x轴的正负方向
-            vec2 realPoint = getRealCenterPoint(uIntersectPoint.zy, uMaxGeoSize.zy);
-            if (getCardArea(vWorldPosition.zy, realPoint)) {
-              gl_FragColor = getTexColor(vWorldPosition.zy, realPoint);
-            }
-          } else if (checkFace(vec3(0.0, 1.0, 0.0))) { // y轴的正负方向
-            vec2 realPoint = getRealCenterPoint(uIntersectPoint.xz, uMaxGeoSize.xz);
-            if (getCardArea(vWorldPosition.xz, realPoint)) {
-              gl_FragColor = getTexColor(vWorldPosition.xz, realPoint);
-            }
-          } else if (checkFace(vec3(0.0, 0.0, 1.0))) { // z轴的正负方向
-            vec2 realPoint = getRealCenterPoint(uIntersectPoint.xy, uMaxGeoSize.xy);
-            if (getCardArea(vWorldPosition.xy, realPoint)) {
-              gl_FragColor = getTexColor(vWorldPosition.xy, realPoint);
-            }
-          }
-        }
-      }
+      // 使用vNormal和获取到点击位置的法向量进行比较
+      // if (dot(normalize(objectNormal), normalize(uFaceNormal)) > 0.9) {
+      //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+      // }
       // void main end
       `
     );
@@ -606,12 +475,11 @@ class DecorationDesignRender {
         {
           face, // 相交的点，存在于物体的哪一个面上
           point,
-          uv,
+          // uv,
         },
       ] = interArr;
-      this.debugUniformParams.uPointUV.value = uv;
-      this.debugUniformParams.uUpFace.value = face.normal;
-      this.debugUniformParams.uIntersectPoint.value = point;
+      this.debugUniformParams.uFaceNormal.value = face.normal;
+      this.debugUniformParams.uClickPoint.value = point;
     }
 
     // const interArr = ray.intersectObjects(this.wallMeshList);
