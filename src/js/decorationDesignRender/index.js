@@ -2,6 +2,7 @@ import {
   BoxGeometry,
   PlaneGeometry,
   ExtrudeGeometry,
+  BufferGeometry,
   MeshStandardMaterial,
   Mesh,
   Color,
@@ -13,9 +14,16 @@ import {
   MOUSE,
   Shape,
   LineCurve3,
+  ShaderMaterial,
+  Group,
+  MathUtils,
 } from 'three';
 import * as dat from 'dat.gui';
 import assetImage from '@/assets/image/five.jpeg';
+
+import vertexShader from './shader/vertexShader.glsl';
+import fragmentShader from './shader/fragmentShader.glsl';
+
 
 const textureLoader = new TextureLoader();
 
@@ -46,8 +54,10 @@ class DecorationDesignRender {
     this.scene = scene;
     this.camera = camera;
 
-    this.wallMeshList = []; // 真实墙体
-    this.pillarMeshList = []; // 真实柱子
+    this.wallMeshGroup = new Group(); // 真实墙体
+    this.wallDepth = 6; // 墙体的默认厚度
+    this.wallHeight = 50; // 墙体的默认高度
+    this.pillarMeshGroup = new Group(); // 真实柱子
     this.planeWallMeshList = []; // 代表墙体的平面
     this.planePillarMeshList = []; // 代表柱子的平面
     this.uniformList = [];
@@ -55,8 +65,11 @@ class DecorationDesignRender {
     this.debugMesh = {};
     this.debugUniformParams = {};
 
-    // this.init();
-    this.debugInit();
+    this.scene.add(this.wallMeshGroup);
+    this.scene.add(this.pillarMeshGroup);
+
+    this.init();
+    // this.debugInit();
     this.guiInit();
   }
 
@@ -64,217 +77,218 @@ class DecorationDesignRender {
   // 可以理解为平行四边形挤压出的几何体
   /**
    * 
-   * @param {Number} length 长边的长度
-   * @param {Number} angle 内部小角的大小
-   * @param {Number} axesAngle 长边相对于x轴正方向的长度
+   * @param {Object} directionVec 墙体的方向的向量
+   * @param {String} axesType 依据于哪一条边创建平行四边形
    */
-  getLineGeometry(length, angle = Math.PI / 2, axesAngle = 0) {
+  createLineGeometry(directionVec, axesType) {
     // 使用挤压几何体之后，定义的方向的角度是依据于z轴负方向绘制的
+    const width = this.wallDepth; // 平行四边形较窄的边的默认长度
+    const depth = this.wallHeight;
+    const pointArr = []; // 需要移动的点位
+    if (axesType === 'x') {
+      const directionTempVec = directionVec.clone().rotateAround(new Vector2(0, 0), -Math.PI / 2);
+      pointArr.push({ x: directionTempVec.x, y: directionTempVec.y });
 
-    // 深度为 40
-    const width = 6; // 平行四边形较窄的边的默认长度
-    const depth = 40;
+      const diagonalVec = new Vector2().addVectors(directionVec, new Vector2(0, width)).rotateAround(new Vector2(0, 0), -Math.PI / 2);
+      pointArr.push({ x: diagonalVec.x, y: diagonalVec.y });
+
+      pointArr.push({ x: width, y: 0 });
+    } else {
+      pointArr.push({ x: 0, y: -width });
+
+      const diagonalVec = new Vector2().addVectors(new Vector2(width, 0), directionVec).rotateAround(new Vector2(0, 0), -Math.PI / 2);
+      pointArr.push({ x: diagonalVec.x, y: diagonalVec.y });
+
+      const directionTempVec = directionVec.clone().rotateAround(new Vector2(0, 0), -Math.PI / 2);
+      pointArr.push({ x: directionTempVec.x, y: directionTempVec.y });
+    }
+    pointArr.push({ x: 0, y: 0 });
+
     const shape = new Shape();
-    // const diagonalLength = (length + Math.cos(angle))
-    const diagonalVec = new Vector2(length, 0).add(new Vector2(width * Math.cos(angle), width * Math.sin(angle)));
-    const diagonalLength = diagonalVec.length();
-    const diagonalAngle = diagonalVec.angle();
     shape.moveTo(0, 0);
-    // shape.lineTo(length, 0);
-    shape.lineTo(
-      length * Math.cos(axesAngle),
-      length * Math.sin(axesAngle),
-    );
-    shape.lineTo(
-      diagonalLength * Math.cos(diagonalAngle + axesAngle),
-      diagonalLength * Math.sin(diagonalAngle + axesAngle),
-    );
-    shape.lineTo(
-      width * Math.cos(angle + axesAngle),
-      width * Math.sin(angle + axesAngle),
-    );
-    shape.lineTo(0, 0);
+    console.log(pointArr);
+    pointArr.forEach(({ x, y }) => {
+      shape.lineTo(x, y);
+    });
 
     return new ExtrudeGeometry(shape, {
       steps: 3,
       bevelThickness: 0,
       bevelSize: 0,
       extrudePath: new LineCurve3(
-        new Vector3(0, 0, 0),
-        new Vector3(0, depth, 0),
+        new Vector3(0, -depth / 2, 0),
+        new Vector3(0, depth / 2, 0),
       ),
     });
   }
 
-  init() {
-    const imgTex = textureLoader.load(assetImage);
-    // const diagonal = Math.pow(Math.pow(4, 2) + Math.pow(40, 2), 0.5);
-    for (let i = 0; i < 4; i++) {
-      const material = new MeshStandardMaterial({
-        color: wallColor,
-      });
-      // 墙体
-      let wallGeometry = null;
-      let planeWallGeometry = null;
-      if (i < 2) {
-        wallGeometry = new BoxGeometry(4, 40, 60 - 4);
-        planeWallGeometry = new PlaneGeometry(4, 60 - 4);
-      } else {
-        wallGeometry = new BoxGeometry(60 - 4, 40, 4);
-        planeWallGeometry = new PlaneGeometry(60 - 4, 4);
-      }
-      const position = wallGeometry.getAttribute('position').array;
-      const uniforms = {
-        uMaxGeoSize: {
-          value: new Vector3(
-            Math.abs(position[0]),
-            Math.abs(position[1]),
-            Math.abs(position[2]),
-          ),
-        },
-        uTexture: {
-          value: imgTex,
-        },
-        uCardSize: {
-          value: 6,
-        },
-        uPointUV: {
-          value: new Vector2(-1, -1),
-        },
-        uUpFace: { // 当前点击面对应的法向量
-          value: new Vector3(0, 0, 0),
-        },
-        uIntersectPoint: {
-          value: new Vector3(0, 0, 0),
-        },
-      };
-      material.onBeforeCompile = (shader) => {
-        console.log(shader.vertexShader);
-        console.log(shader.fragmentShader);
-        shader.uniforms = {
-          ...shader.uniforms,
-          ...uniforms,
-        };
-  
-        // 顶点着色器
-        // 变量的初始化，包括使用defined、uniform、attribute、varying
-        shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
-        shader.vertexShader = shader.vertexShader.replace(
-          'void main() {',
-          `
-          // custom func end
-          void main() {
-          `
-        );
-        shader.vertexShader = shader.vertexShader.replace(
-          'vWorldPosition = worldPosition.xyz;',
-          `
-          vWorldPosition = worldPosition.xyz;
-          // void main end
-          `
-        );
-  
-        // 片元着色器
-        // 变量的初始化，包括使用defined、uniform、attribute、varying
-        shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
-        shader.fragmentShader = shader.fragmentShader.replace(
-          'void main() {',
-          `
-          // custom func end
-          void main() {
-          `
-        );
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <dithering_fragment>',
-          `
-          #include <dithering_fragment>
-          // void main end
-          `
-        );
-        // 添加根据纹理获取渲染效果的函数
-        shader.fragmentShader = this.handleSetTexRender(shader.fragmentShader);
-        // 添加验证方向的函数，当前逻辑可以理解校验坐标轴的正负方向是否为法向量
-        shader.fragmentShader = this.handleCheckFace(shader.fragmentShader);
-        // 实现边缘校验的操作，生成新的中心点
-        shader.fragmentShader = this.handleGetRealCenterPoint(shader.fragmentShader);
-        // 添加获取一个方形区域的函数
-        shader.fragmentShader = this.handleGetCardArea(shader.fragmentShader);
-        // 片元着色器，针对于点击位置进行渲染的逻辑
-        shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
-      };
-
-      // this.changeWallMaterial(material, uniforms);
-      this.uniformList.push(uniforms);
-
-      // 真实墙体
-      const mesh = new Mesh(wallGeometry, material);
-      mesh.userData = {
-        ...mesh.userData,
-        meshType: 'wall',
-        meshIndex: i,
-      };
-      this.wallMeshList.push(mesh);
-      this.scene.add(mesh);
-
-      // 用来代表墙体的虚拟mesh
-      const planeMesh = new Mesh(planeWallGeometry, new MeshBasicMaterial({ color: wallColor }));
-      planeMesh.visible = false;
-      this.planeWallMeshList.push(planeMesh);
-      this.scene.add(planeMesh);
-    }
+  // 以两个柱子作为参照创建墙体
+  // 使用柱子的中心点作为计算的坐标
+  /**
+   * 
+   * @param {Object} pilarLocation1 第一个柱子的位置
+   * @param {Object} pilarLocation2 第二个柱子的位置
+   * @param {string} axesType 两个柱子中间的墙体连接到柱子的哪一个面
+   */
+  createWallMesh(pilarLocation1 = {}, pilarLocation2 = {}, axesType) {
+    let { x: x1, z: z1 } = pilarLocation1;
+    let { x: x2, z: z2 } = pilarLocation2;
     /*
-      可以理解为，物体本身也有一个xyz的坐标系
-      在旋转物体的时候，物体自身的坐标轴也会跟着一起进行旋转
-      移动旋转之后的物体对应的方向，也是依据于物体自身的坐标轴方向
+      这里需要在二维上进行计算，需要将y轴的坐标进行反转
     */
-    this.wallMeshList[0].translateOnAxis(new Vector3(1, 0, 0), 30);
-    this.wallMeshList[1].translateOnAxis(new Vector3(-1, 0, 0), 30);
-    this.wallMeshList[2].translateOnAxis(new Vector3(0, 0, 1), 30);
-    // this.wallMeshList[2].rotateY(Math.PI / 2);
-    this.wallMeshList[3].translateOnAxis(new Vector3(0, 0, -1), 30);
-    // this.wallMeshList[3].rotateY(Math.PI / 2);
+    z1 = -z1;
+    z2 = -z2;
 
-    // 墙角的柱子
-    for (let i = 0; i < 4; i++) {
-      const material = new MeshStandardMaterial({
-        color: pillarColor,
-      });
-      const pillarGeometry = new BoxGeometry(4, 40, 4);
-      const planePillarGeometry = new PlaneGeometry(4, 4);
-
-      // 真实地柱子
-      const mesh = new Mesh(pillarGeometry, material);
-      mesh.userData.meshType = 'pillar';
-      this.pillarMeshList.push(mesh);
-      this.scene.add(mesh);
-
-      // 代表柱子的虚拟mesh
-      const planeMesh = new Mesh(planePillarGeometry, new MeshBasicMaterial({ color: pillarColor }));
-      planeMesh.visible = false;
-      this.planePillarMeshList.push(planeMesh);
-      this.scene.add(planeMesh);
+    const startVec = new Vector2(x1, z1);
+    const startTranslateVec = startVec.clone();
+    const endVec = new Vector2(x2, z2);
+    let tempX = 0;
+    let tempY = 0;
+    if (axesType === 'x') {
+      tempX = startVec.x + (this.wallDepth / 2 * (x1 < x2 ? 1 : -1));
+      tempY = startVec.y - this.wallDepth / 2;
+      startVec.setX(tempX);
+      startTranslateVec.set(tempX, tempY);
+    } else if (axesType === 'z') {
+      tempX = startVec.x - this.wallDepth / 2;
+      tempY = startVec.y + (this.wallDepth / 2 * (z1 < z2 ? 1 : -1));
+      startVec.setY(tempY);
+      startTranslateVec.set(tempX, tempY);
     }
-    const length = Math.pow(Math.pow(30, 2) * 2, 0.5);
-    this.pillarMeshList[0].translateOnAxis(new Vector3(1, 0, 1).normalize(), length);
-    this.pillarMeshList[1].translateOnAxis(new Vector3(-1, 0, 1).normalize(), length);
-    this.pillarMeshList[2].translateOnAxis(new Vector3(-1, 0, -1).normalize(), length);
-    this.pillarMeshList[3].translateOnAxis(new Vector3(1, 0, -1).normalize(), length);
+    if (axesType === 'x') {
+      endVec.setX(endVec.x + (this.wallDepth / 2 * (x1 < x2 ? -1 : 1)));
+    } else if (axesType === 'z') {
+      endVec.setY(endVec.y + (this.wallDepth / 2 * (z1 < z2 ? -1 : 1)));
+    }
+    console.log('startVec', startVec);
+    console.log('endVec', endVec);
+    // console.log('startTranslateVec', startTranslateVec);
+    const directVec = new Vector2().subVectors(endVec, startVec);
+    const rad = directVec.angle();
+    console.log('directVec', directVec);
+    console.log('rad', rad);
 
-    // 添加地面
-    const basePlaneGeometry = new PlaneGeometry(100, 100);
-    const planeMaterial = new MeshBasicMaterial({
-      color: new Color('#8A2BE2'),
+    // 求墙体内部的角度
+    const axesVec = new Vector2(0, 0);
+    if (axesType === 'x') {
+      axesVec.setX(1);
+    } else {
+      axesVec.setY(1);
+    }
+    const angleCos = axesVec.dot(directVec.clone().normalize());
+    let angle = Math.acos(angleCos);
+    if (angle > Math.PI / 2) angle -= Math.PI / 2;
+
+    // console.log(directVec);
+
+    const geometry = this.createLineGeometry(directVec, axesType);
+    // geometry.computeVertexNormals(); // 计算顶点的法向量
+    const material = new ShaderMaterial({
+      uniforms: {
+        // 先使用平行光做出一个效果
+        uDirection: {
+          value: new Vector3(30, 30, 50).normalize(),
+        },
+        uColor: {
+          value: wallColor,
+        },
+        uLightColor: {
+          value: new Color('#ffffff'),
+        },
+      },
+      vertexShader,
+      fragmentShader,
     });
-    const basePlaneMesh = new Mesh(basePlaneGeometry, planeMaterial);
-    basePlaneMesh.translateY(-20);
-    basePlaneMesh.rotateX(- Math.PI / 2);
-    this.scene.add(basePlaneMesh);
+    const mesh = new Mesh(geometry, material);
+    // 需要将墙体移动到第一个柱子的位置
+    const translateLength = startTranslateVec.length();
+    mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
+    this.wallMeshGroup.add(mesh);
+    console.log('');
+  }
+
+  init() {
+    this.scene.add(this.wallMeshGroup);
+
+    const baseWallLength = 60; // 墙体的长度
+    // 创建墙角的柱子
+    const pillarMaterial = new MeshStandardMaterial({
+        color: pillarColor,
+    });
+    const pillarGeometry = new BoxGeometry(this.wallDepth, this.wallHeight, this.wallDepth);
+
+    const pillarMesh1 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
+    // 左上角
+    pillarMesh1.translateX(-baseWallLength);
+    pillarMesh1.translateZ(-baseWallLength / 2);
+    this.pillarMeshGroup.add(pillarMesh1);
+
+    const pillarMesh2 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
+    // 左下角
+    pillarMesh2.translateX(-baseWallLength / 2);
+    pillarMesh2.translateZ(baseWallLength / 2);
+    this.pillarMeshGroup.add(pillarMesh2);
+
+    const pillarMesh3 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
+    // 右下角
+    pillarMesh3.translateX(baseWallLength / 2);
+    pillarMesh3.translateZ(baseWallLength / 2);
+    this.pillarMeshGroup.add(pillarMesh3);
+
+    const pillarMesh4 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
+    // 右上角
+    pillarMesh4.translateX(baseWallLength);
+    pillarMesh4.translateZ(-baseWallLength / 2);
+    this.pillarMeshGroup.add(pillarMesh4);
+
+    // 使用四个柱子的坐标创建墙体
+    this.createWallMesh(
+      { x: -baseWallLength, z: -baseWallLength / 2 }, // 左上角
+      { x: -baseWallLength / 2, z: baseWallLength / 2 }, // 左下角
+      'z',
+    );
+    this.createWallMesh(
+      { x: -baseWallLength / 2, z: baseWallLength / 2 }, // 左下角
+      { x: baseWallLength / 2, z: baseWallLength / 2 }, // 右下角
+      'x',
+    );
+    this.createWallMesh(
+      { x: baseWallLength / 2, z: baseWallLength / 2 }, // 右下角
+      { x: baseWallLength, z: -baseWallLength / 2 }, // 右上角
+      'z',
+    );
+    this.createWallMesh(
+      { x: baseWallLength, z: -baseWallLength / 2 }, // 右上角
+      { x: -baseWallLength, z: -baseWallLength / 2 }, // 左上角
+      'x',
+    );
+
+    // const material = new ShaderMaterial({
+    //   vertexShader,
+    //   fragmentShader,
+    // });
+
+    // // 创建初始的四面墙
+    // const baseWallLength = 60; // 墙体的长度
+    // const wallTranslateLength = Math.pow(Math.pow(baseWallLength / 2, 2) * 2, 0.5);
+
+    // const wallGeometry1 = this.getLineGeometry(baseWallLength, singleRad * 90, -singleRad * 90);
+    // const wallMesh1 = new Mesh(wallGeometry1, material.clone());
+    // wallMesh1.translateOnAxis(
+    //   new Vector3(-baseWallLength / 2 - this.wallDepth, 0, baseWallLength / 2 + this.wallDepth).normalize(),
+    //   wallTranslateLength
+    // );
+    // this.wallMeshGroup.add(wallMesh1);
   }
 
   debugInit() {
     const imgTex = textureLoader.load(assetImage);
-    const material = new MeshStandardMaterial({
-      color: wallColor,
+    // const material = new MeshStandardMaterial({
+    //   color: wallColor,
+    // });
+    const material = new ShaderMaterial({
+      vertexShader,
+      fragmentShader,
     });
     // const geometry = new BoxGeometry(30, 40, 50);
     const geometry = this.getLineGeometry(50, singleRad * 40, -singleRad * 76);
@@ -295,53 +309,61 @@ class DecorationDesignRender {
       },
     };
 
-    material.onBeforeCompile = (shader) => {
-      console.log('vertexShader', shader.vertexShader);
-      console.log('fragmentShader', shader.fragmentShader);
-      shader.uniforms = {
-        ...shader.uniforms,
-        ...this.debugUniformParams,
-      };
+    // material.onBeforeCompile = (shader) => {
+    //   shader.uniforms = {
+    //     ...shader.uniforms,
+    //     ...this.debugUniformParams,
+    //   };
 
-      // 顶点着色器
-      // 变量的初始化，包括使用defined、uniform、attribute、varying
-      shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
-      shader.vertexShader = shader.vertexShader.replace(
-        'void main() {',
-        `
-        // custom func end
-        void main() {
-        // void main start
-        `
-      );
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <fog_vertex>',
-        `
-        #include <fog_vertex>
-        // void main end
-        `
-      );
+    //   console.log(shader);
+    //   console.log('修改前');
+    //   console.log('vertexShader', shader.vertexShader);
+    //   console.log('fragmentShader', shader.fragmentShader);
 
-      // 片元着色器
-      // 变量的初始化，包括使用defined、uniform、attribute、varying
-      shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
-      shader.fragmentShader = shader.fragmentShader.replace(
-        'void main() {',
-        `
-        // custom func end
-        void main() {
-        // void main start
-        `
-      );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <dithering_fragment>',
-        `
-        #include <dithering_fragment>
-        // void main end
-        `
-      );
-      shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
-    };
+    //   // 顶点着色器
+    //   // 变量的初始化，包括使用defined、uniform、attribute、varying
+    //   shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
+    //   shader.vertexShader = shader.vertexShader.replace(
+    //     'void main() {',
+    //     `
+    //     // custom func end
+    //     void main() {
+    //     // void main start
+    //     `
+    //   );
+    //   shader.vertexShader = shader.vertexShader.replace(
+    //     '#include <fog_vertex>',
+    //     `
+    //     #include <fog_vertex>
+    //     // void main end
+    //     `
+    //   );
+    //   shader.vertexShader = this.handleGetAttrbuteNormal(shader.vertexShader);
+
+    //   // 片元着色器
+    //   // 变量的初始化，包括使用defined、uniform、attribute、varying
+    //   shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
+    //   shader.fragmentShader = shader.fragmentShader.replace(
+    //     'void main() {',
+    //     `
+    //     // custom func end
+    //     void main() {
+    //     // void main start
+    //     `
+    //   );
+    //   shader.fragmentShader = shader.fragmentShader.replace(
+    //     '#include <dithering_fragment>',
+    //     `
+    //     #include <dithering_fragment>
+    //     // void main end
+    //     `
+    //   );
+    //   shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
+
+    //   // console.log('修改后');
+    //   // console.log('vertexShader', shader.vertexShader);
+    //   // console.log('fragmentShader', shader.fragmentShader);
+    // };
 
     const mesh = new Mesh(geometry, material);
     this.debugMesh = mesh;
@@ -364,7 +386,7 @@ class DecorationDesignRender {
       e.stopPropagation();
       return false;
     });
-    
+
     this.funcValue = {
       isModifyWall: false,
     };
@@ -403,6 +425,10 @@ class DecorationDesignRender {
     res = res.replace(
       '#include <common>',
       `
+      attribute vec3 aNormal;
+
+      varying vec3 vAttrNormal;
+      // custom params end
       #include <common>
       `
     );
@@ -425,12 +451,24 @@ class DecorationDesignRender {
       uniform vec3 uFaceNormal;
       uniform vec3 uClickPoint;
       uniform float uCardSize;
+
+      varying vec3 vAttrNormal;
+      // custom params end
       #include <common>
-      // uniform params end
       `
     );
 
     return res;
+  }
+
+  handleGetAttrbuteNormal(vertex) {
+    return vertex.replace(
+      '// void main start',
+      `
+      vAttrNormal = normal;
+      // void main start
+      `
+    );
   }
 
   handleRenderClickArea(fragment) {
@@ -438,9 +476,25 @@ class DecorationDesignRender {
       '// void main end',
       `
       // 使用vNormal和获取到点击位置的法向量进行比较
-      // if (dot(normalize(objectNormal), normalize(uFaceNormal)) > 0.9) {
+      vec3 attNormal = normalize(vNormal);
+      // if (length(attNormal) >= 1.0) {
+      //   gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+      // }
+      float checkVal = 11.0;
+
+      // if (attNormal.x >= checkVal) {
+      //   gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
+      // } else {
       //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
       // }
+
+      // if (true) { // 可以
+      //   gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
+      // } else {
+      //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+      // }
+      gl_FragColor = vec4(attNormal, 1.0);
+
       // void main end
       `
     );
@@ -482,7 +536,7 @@ class DecorationDesignRender {
       this.debugUniformParams.uClickPoint.value = point;
     }
 
-    // const interArr = ray.intersectObjects(this.wallMeshList);
+    // const interArr = ray.intersectObjects(this.wallMeshGroup);
     // console.log(interArr);
     // // todo ------ 在物体的mesh经过旋转之后，使用这个逻辑渲染就会有问题
     // // 已修复

@@ -6,6 +6,9 @@ uniform float uHorizontalOffset;
 varying vec2 vUv;
 varying vec3 vPosition;
 
+vec4 color = vec4(0.0, 1.0, 1.0, 1.0);
+vec4 color = vec4(1.0, 0.0, 1.0, 1.0);
+
 void main() {
   // gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
 
