@@ -3,6 +3,7 @@ precision mediump float;
 // attribute vec3 normal;
 
 varying vec3 vNormal;
+varying vec3 vPosition;
 
 void main() {
 
@@ -12,6 +13,7 @@ void main() {
 
   vec4 sourcePosition = vec4(position, 1.0);
   vec4 modelPosition = modelMatrix * sourcePosition;
+  vPosition = normalMatrix * modelPosition.xyz;
   vec4 viewPosition = viewMatrix * modelPosition;
   gl_Position = projectionMatrix * viewPosition;
 }

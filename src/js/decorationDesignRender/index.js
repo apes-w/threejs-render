@@ -187,6 +187,7 @@ class DecorationDesignRender {
       uniforms: {
         // 先使用平行光做出一个效果
         uDirection: {
+          // 平行光的方向为，从亮处到暗处的反方向
           value: new Vector3(30, 30, 50).normalize(),
         },
         uColor: {
@@ -194,6 +195,10 @@ class DecorationDesignRender {
         },
         uLightColor: {
           value: new Color('#ffffff'),
+        },
+        // 点光源的位置
+        uLightPosition: {
+          value: new Vector3(30, 30, 50),
         },
       },
       vertexShader,
