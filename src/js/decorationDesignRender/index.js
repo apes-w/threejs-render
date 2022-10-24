@@ -193,12 +193,16 @@ class DecorationDesignRender {
         uColor: {
           value: wallColor,
         },
+        // 漫反射的颜色
+        uAmbientLightColor: {
+          value: new Color('#BFBFBF'),
+        },
         uLightColor: {
           value: new Color('#ffffff'),
         },
         // 点光源的位置
         uLightPosition: {
-          value: new Vector3(30, 30, 50),
+          value: new Vector3(30, 30, 100),
         },
       },
       vertexShader,
