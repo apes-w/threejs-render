@@ -4,6 +4,8 @@ precision mediump float;
 
 varying vec3 vNormal;
 varying vec3 vPosition;
+// 配合光线，实现渐变的效果
+varying vec3 vNormalPosition;
 
 void main() {
 
@@ -13,7 +15,8 @@ void main() {
 
   vec4 sourcePosition = vec4(position, 1.0);
   vec4 modelPosition = modelMatrix * sourcePosition;
-  vPosition = normalMatrix * modelPosition.xyz;
+  vPosition = modelPosition.xyz;
+  vNormalPosition = normalMatrix * modelPosition.xyz;
   vec4 viewPosition = viewMatrix * modelPosition;
   gl_Position = projectionMatrix * viewPosition;
 }

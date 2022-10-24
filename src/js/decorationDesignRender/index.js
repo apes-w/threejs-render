@@ -26,6 +26,7 @@ import fragmentShader from './shader/fragmentShader.glsl';
 
 
 const textureLoader = new TextureLoader();
+const imgTex = textureLoader.load(assetImage);
 
 // 墙体的颜色
 const wallColor = new Color('#D8BFD8');
@@ -106,7 +107,6 @@ class DecorationDesignRender {
 
     const shape = new Shape();
     shape.moveTo(0, 0);
-    console.log(pointArr);
     pointArr.forEach(({ x, y }) => {
       shape.lineTo(x, y);
     });
@@ -160,13 +160,7 @@ class DecorationDesignRender {
     } else if (axesType === 'z') {
       endVec.setY(endVec.y + (this.wallDepth / 2 * (z1 < z2 ? -1 : 1)));
     }
-    console.log('startVec', startVec);
-    console.log('endVec', endVec);
-    // console.log('startTranslateVec', startTranslateVec);
     const directVec = new Vector2().subVectors(endVec, startVec);
-    const rad = directVec.angle();
-    console.log('directVec', directVec);
-    console.log('rad', rad);
 
     // 求墙体内部的角度
     const axesVec = new Vector2(0, 0);
@@ -179,12 +173,13 @@ class DecorationDesignRender {
     let angle = Math.acos(angleCos);
     if (angle > Math.PI / 2) angle -= Math.PI / 2;
 
-    // console.log(directVec);
-
     const geometry = this.createLineGeometry(directVec, axesType);
     // geometry.computeVertexNormals(); // 计算顶点的法向量
     const material = new ShaderMaterial({
       uniforms: {
+        uTexture: {
+          value: imgTex,
+        },
         // 先使用平行光做出一个效果
         uDirection: {
           // 平行光的方向为，从亮处到暗处的反方向
@@ -200,9 +195,25 @@ class DecorationDesignRender {
         uLightColor: {
           value: new Color('#ffffff'),
         },
+        // 最后渲染的卡片的大小
+        uCardSize: {
+          value: 10,
+        },
         // 点光源的位置
         uLightPosition: {
           value: new Vector3(30, 30, 100),
+        },
+        // 点击的位置
+        uClickPoint: {
+          value: new Vector3(0, 0, 0),
+        },
+        // 点击位置对应的uv
+        uClickPointUV: {
+          value: new Vector2(0, 0),
+        },
+        // 点击的位置，对应面的法向量
+        uClickNormal: {
+          value: new Vector3(0, 0, 0),
         },
       },
       vertexShader,
@@ -213,7 +224,6 @@ class DecorationDesignRender {
     const translateLength = startTranslateVec.length();
     mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
     this.wallMeshGroup.add(mesh);
-    console.log('');
   }
 
   init() {
@@ -301,7 +311,6 @@ class DecorationDesignRender {
     });
     // const geometry = new BoxGeometry(30, 40, 50);
     const geometry = this.getLineGeometry(50, singleRad * 40, -singleRad * 76);
-    console.log(geometry);
     
     this.debugUniformParams = {
       uTexture: {
@@ -323,11 +332,6 @@ class DecorationDesignRender {
     //     ...shader.uniforms,
     //     ...this.debugUniformParams,
     //   };
-
-    //   console.log(shader);
-    //   console.log('修改前');
-    //   console.log('vertexShader', shader.vertexShader);
-    //   console.log('fragmentShader', shader.fragmentShader);
 
     //   // 顶点着色器
     //   // 变量的初始化，包括使用defined、uniform、attribute、varying
@@ -369,9 +373,6 @@ class DecorationDesignRender {
     //   );
     //   shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
 
-    //   // console.log('修改后');
-    //   // console.log('vertexShader', shader.vertexShader);
-    //   // console.log('fragmentShader', shader.fragmentShader);
     // };
 
     const mesh = new Mesh(geometry, material);
@@ -391,7 +392,6 @@ class DecorationDesignRender {
     gui.width = 300;
 
     gui.domElement.addEventListener('click', (e) => {
-      // console.log('阻止冒泡');
       e.stopPropagation();
       return false;
     });
@@ -525,48 +525,21 @@ class DecorationDesignRender {
   handleClick(e) {
     const ray = this.getRaycaster(e.clientX, e.clientY);
 
-    const interArr = ray.intersectObjects([this.debugMesh]);
+    const interArr = ray.intersectObjects(this.wallMeshGroup.children);
     console.log(interArr);
-    // todo ------ 在物体的mesh经过旋转之后，使用这个逻辑渲染就会有问题
-    // 已修复
-    // 在经过mesh的旋转之后，point的点和face对应的法向量之间有差距
-    // face的法向量是相对于物体本身的向量方向
-    // point的点是相对于物体在世界坐标系中的位置
     if (interArr.length) {
-      // 第一个相交的物体
       const [
         {
-          face, // 相交的点，存在于物体的哪一个面上
+          face,
+          object,
           point,
-          // uv,
+          uv,
         },
       ] = interArr;
-      this.debugUniformParams.uFaceNormal.value = face.normal;
-      this.debugUniformParams.uClickPoint.value = point;
+      object.material.uniforms.uClickPoint.value = point;
+      object.material.uniforms.uClickPointUV.value = uv;
+      object.material.uniforms.uClickNormal.value = face.normal.normalize();
     }
-
-    // const interArr = ray.intersectObjects(this.wallMeshGroup);
-    // console.log(interArr);
-    // // todo ------ 在物体的mesh经过旋转之后，使用这个逻辑渲染就会有问题
-    // // 已修复
-    // // 在经过mesh的旋转之后，point的点和face对应的法向量之间有差距
-    // // face的法向量是相对于物体本身的向量方向
-    // // point的点是相对于物体在世界坐标系中的位置
-    // if (interArr.length) {
-    //   // 第一个相交的物体
-    //   const [
-    //     {
-    //       face, // 相交的点，存在于物体的哪一个面上
-    //       object,
-    //       point,
-    //       uv,
-    //     },
-    //   ] = interArr;
-    //   const { meshIndex } = object.userData;
-    //   this.uniformList[meshIndex].uPointUV.value = uv;
-    //   this.uniformList[meshIndex].uUpFace.value = face.normal;
-    //   this.uniformList[meshIndex].uIntersectPoint.value = point;
-    // }
   }
 }
 
