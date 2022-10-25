@@ -16,7 +16,6 @@ import {
   LineCurve3,
   ShaderMaterial,
   Group,
-  MathUtils,
 } from 'three';
 import * as dat from 'dat.gui';
 import assetImage from '@/assets/image/five.jpeg';
@@ -327,54 +326,6 @@ class DecorationDesignRender {
       },
     };
 
-    // material.onBeforeCompile = (shader) => {
-    //   shader.uniforms = {
-    //     ...shader.uniforms,
-    //     ...this.debugUniformParams,
-    //   };
-
-    //   // 顶点着色器
-    //   // 变量的初始化，包括使用defined、uniform、attribute、varying
-    //   shader.vertexShader = this.vertexConstantInit(shader.vertexShader);
-    //   shader.vertexShader = shader.vertexShader.replace(
-    //     'void main() {',
-    //     `
-    //     // custom func end
-    //     void main() {
-    //     // void main start
-    //     `
-    //   );
-    //   shader.vertexShader = shader.vertexShader.replace(
-    //     '#include <fog_vertex>',
-    //     `
-    //     #include <fog_vertex>
-    //     // void main end
-    //     `
-    //   );
-    //   shader.vertexShader = this.handleGetAttrbuteNormal(shader.vertexShader);
-
-    //   // 片元着色器
-    //   // 变量的初始化，包括使用defined、uniform、attribute、varying
-    //   shader.fragmentShader = this.fragmentConstantInit(shader.fragmentShader);
-    //   shader.fragmentShader = shader.fragmentShader.replace(
-    //     'void main() {',
-    //     `
-    //     // custom func end
-    //     void main() {
-    //     // void main start
-    //     `
-    //   );
-    //   shader.fragmentShader = shader.fragmentShader.replace(
-    //     '#include <dithering_fragment>',
-    //     `
-    //     #include <dithering_fragment>
-    //     // void main end
-    //     `
-    //   );
-    //   shader.fragmentShader = this.handleRenderClickArea(shader.fragmentShader);
-
-    // };
-
     const mesh = new Mesh(geometry, material);
     this.debugMesh = mesh;
     this.scene.add(mesh);
@@ -421,94 +372,6 @@ class DecorationDesignRender {
     wallFuncFolder
       .add(guiFunc, 'removePillar')
       .name('删除柱子');
-  }
-
-  vertexConstantInit(vertex) {
-    let res = vertex.replace(
-      '#define STANDARD',
-      `
-      #define STANDARD
-      `
-    );
-
-    res = res.replace(
-      '#include <common>',
-      `
-      attribute vec3 aNormal;
-
-      varying vec3 vAttrNormal;
-      // custom params end
-      #include <common>
-      `
-    );
-
-    return res;
-  }
-
-  fragmentConstantInit(fragment) {
-    let res = fragment.replace(
-      '#define STANDARD',
-      `
-      #define STANDARD
-      `
-    );
-
-    res = res.replace(
-      '#include <common>',
-      `
-      uniform sampler2D uTexture;
-      uniform vec3 uFaceNormal;
-      uniform vec3 uClickPoint;
-      uniform float uCardSize;
-
-      varying vec3 vAttrNormal;
-      // custom params end
-      #include <common>
-      `
-    );
-
-    return res;
-  }
-
-  handleGetAttrbuteNormal(vertex) {
-    return vertex.replace(
-      '// void main start',
-      `
-      vAttrNormal = normal;
-      // void main start
-      `
-    );
-  }
-
-  handleRenderClickArea(fragment) {
-    let res = fragment.replace(
-      '// void main end',
-      `
-      // 使用vNormal和获取到点击位置的法向量进行比较
-      vec3 attNormal = normalize(vNormal);
-      // if (length(attNormal) >= 1.0) {
-      //   gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-      // }
-      float checkVal = 11.0;
-
-      // if (attNormal.x >= checkVal) {
-      //   gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-      // } else {
-      //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-      // }
-
-      // if (true) { // 可以
-      //   gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-      // } else {
-      //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-      // }
-      gl_FragColor = vec4(attNormal, 1.0);
-
-      // void main end
-      `
-    );
-
-    return res;
   }
 
   // 根据相机位置和在屏幕上点击的位置生成一条射线
