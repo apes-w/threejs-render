@@ -16,6 +16,8 @@ import {
   LineCurve3,
   ShaderMaterial,
   Group,
+  DoubleSide,
+  ShapeGeometry,
 } from 'three';
 import * as dat from 'dat.gui';
 import assetImage from '@/assets/image/five.jpeg';
@@ -58,17 +60,24 @@ class DecorationDesignRender {
     this.wallDepth = 6; // 墙体的默认厚度
     this.wallHeight = 50; // 墙体的默认高度
     this.pillarMeshGroup = new Group(); // 真实柱子
-    this.planeWallMeshList = []; // 代表墙体的平面
-    this.planePillarMeshList = []; // 代表柱子的平面
-    this.uniformList = [];
+    this.planeWallMeshGroup = new Group(); // 代表墙体的平面
+    this.planePillarMeshGroup = new Group(); // 代表柱子的平面
+    // 所有柱子对应的位置
+    this.pillarPositionList = [];
 
     this.debugMesh = {};
     this.debugUniformParams = {};
 
     this.scene.add(this.wallMeshGroup);
     this.scene.add(this.pillarMeshGroup);
+    this.scene.add(this.planeWallMeshGroup);
+    this.scene.add(this.planePillarMeshGroup);
+    this.planeWallMeshGroup.visible = false;
+    this.planePillarMeshGroup.visible = false;
 
     this.init();
+    // 代表墙体和柱子的平面的初始化方法
+    this.planeInit();
     // this.debugInit();
     this.guiInit();
   }
@@ -80,7 +89,7 @@ class DecorationDesignRender {
    * @param {Object} directionVec 墙体的方向的向量
    * @param {String} axesType 依据于哪一条边创建平行四边形
    */
-  createLineGeometry(directionVec, axesType) {
+  createLineGeometry(directionVec, axesType, geometryType = 'cube') {
     // 使用挤压几何体之后，定义的方向的角度是依据于z轴负方向绘制的
     const width = this.wallDepth; // 平行四边形较窄的边的默认长度
     const depth = this.wallHeight;
@@ -110,15 +119,30 @@ class DecorationDesignRender {
       shape.lineTo(x, y);
     });
 
-    return new ExtrudeGeometry(shape, {
-      steps: 3,
-      bevelThickness: 0,
-      bevelSize: 0,
-      extrudePath: new LineCurve3(
-        new Vector3(0, -depth / 2, 0),
-        new Vector3(0, depth / 2, 0),
-      ),
-    });
+    if (geometryType === 'cube') {
+      return new ExtrudeGeometry(shape, {
+        steps: 3,
+        bevelThickness: 0,
+        bevelSize: 0,
+        extrudePath: new LineCurve3(
+          new Vector3(0, -depth / 2, 0),
+          new Vector3(0, depth / 2, 0),
+        ),
+      });
+    }
+
+    if (geometryType === 'plane') {
+      return new ExtrudeGeometry(shape, {
+        bevelThickness: 0,
+        bevelSize: 0,
+        extrudePath: new LineCurve3(
+          new Vector3(0, -0.01, 0),
+          new Vector3(0, 0.01, 0),
+        ),
+      });
+    }
+
+    throw new Error('传入的geometry类型未知');
   }
 
   // 以两个柱子作为参照创建墙体
@@ -129,7 +153,7 @@ class DecorationDesignRender {
    * @param {Object} pilarLocation2 第二个柱子的位置
    * @param {string} axesType 两个柱子中间的墙体连接到柱子的哪一个面
    */
-  createWallMesh(pilarLocation1 = {}, pilarLocation2 = {}, axesType) {
+  createWallMesh(pilarLocation1 = {}, pilarLocation2 = {}, axesType, geometryType = 'cube') {
     let { x: x1, z: z1 } = pilarLocation1;
     let { x: x2, z: z2 } = pilarLocation2;
     /*
@@ -148,16 +172,17 @@ class DecorationDesignRender {
       tempY = startVec.y - this.wallDepth / 2;
       startVec.setX(tempX);
       startTranslateVec.set(tempX, tempY);
+
+      endVec.setX(endVec.x + (this.wallDepth / 2 * (x1 < x2 ? -1 : 1)));
     } else if (axesType === 'z') {
       tempX = startVec.x - this.wallDepth / 2;
       tempY = startVec.y + (this.wallDepth / 2 * (z1 < z2 ? 1 : -1));
       startVec.setY(tempY);
       startTranslateVec.set(tempX, tempY);
-    }
-    if (axesType === 'x') {
-      endVec.setX(endVec.x + (this.wallDepth / 2 * (x1 < x2 ? -1 : 1)));
-    } else if (axesType === 'z') {
+
       endVec.setY(endVec.y + (this.wallDepth / 2 * (z1 < z2 ? -1 : 1)));
+    } else {
+      throw new Error('axesType的取值范围仅为x, z');
     }
     const directVec = new Vector2().subVectors(endVec, startVec);
 
@@ -172,57 +197,75 @@ class DecorationDesignRender {
     let angle = Math.acos(angleCos);
     if (angle > Math.PI / 2) angle -= Math.PI / 2;
 
-    const geometry = this.createLineGeometry(directVec, axesType);
-    // geometry.computeVertexNormals(); // 计算顶点的法向量
-    const material = new ShaderMaterial({
-      uniforms: {
-        uTexture: {
-          value: imgTex,
+    if (geometryType === 'cube') {
+      const geometry = this.createLineGeometry(directVec, axesType, geometryType);
+      // geometry.computeVertexNormals(); // 计算顶点的法向量
+      const material = new ShaderMaterial({
+        uniforms: {
+          uTexture: {
+            value: imgTex,
+          },
+          // 先使用平行光做出一个效果
+          uDirection: {
+            // 平行光的方向为，从亮处到暗处的反方向
+            value: new Vector3(30, 30, 50).normalize(),
+          },
+          uColor: {
+            value: wallColor,
+          },
+          // 漫反射的颜色
+          uAmbientLightColor: {
+            value: new Color('#BFBFBF'),
+          },
+          uLightColor: {
+            value: new Color('#ffffff'),
+          },
+          // 最后渲染的卡片的大小
+          uCardSize: {
+            value: 10,
+          },
+          // 点光源的位置
+          uLightPosition: {
+            value: new Vector3(30, 30, 100),
+          },
+          // 点击的位置
+          uClickPoint: {
+            value: new Vector3(0, 0, 0),
+          },
+          // 点击位置对应的uv
+          uClickPointUV: {
+            value: new Vector2(0, 0),
+          },
+          // 点击的位置，对应面的法向量
+          uClickNormal: {
+            value: new Vector3(0, 0, 0),
+          },
         },
-        // 先使用平行光做出一个效果
-        uDirection: {
-          // 平行光的方向为，从亮处到暗处的反方向
-          value: new Vector3(30, 30, 50).normalize(),
-        },
-        uColor: {
-          value: wallColor,
-        },
-        // 漫反射的颜色
-        uAmbientLightColor: {
-          value: new Color('#BFBFBF'),
-        },
-        uLightColor: {
-          value: new Color('#ffffff'),
-        },
-        // 最后渲染的卡片的大小
-        uCardSize: {
-          value: 10,
-        },
-        // 点光源的位置
-        uLightPosition: {
-          value: new Vector3(30, 30, 100),
-        },
-        // 点击的位置
-        uClickPoint: {
-          value: new Vector3(0, 0, 0),
-        },
-        // 点击位置对应的uv
-        uClickPointUV: {
-          value: new Vector2(0, 0),
-        },
-        // 点击的位置，对应面的法向量
-        uClickNormal: {
-          value: new Vector3(0, 0, 0),
-        },
-      },
-      vertexShader,
-      fragmentShader,
-    });
-    const mesh = new Mesh(geometry, material);
-    // 需要将墙体移动到第一个柱子的位置
-    const translateLength = startTranslateVec.length();
-    mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
-    this.wallMeshGroup.add(mesh);
+        vertexShader,
+        fragmentShader,
+      });
+      const mesh = new Mesh(geometry, material);
+      // 需要将墙体移动到第一个柱子的位置
+      const translateLength = startTranslateVec.length();
+      mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
+      this.wallMeshGroup.add(mesh);
+      return;
+    }
+
+    if (geometryType === 'plane') {
+      const geometry = this.createLineGeometry(directVec, axesType, geometryType);
+      const material = new MeshBasicMaterial({
+        color: wallColor,
+        side: DoubleSide,
+      });
+      const mesh = new Mesh(geometry, material);
+      const translateLength = startTranslateVec.length();
+      mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
+      this.planeWallMeshGroup.add(mesh);
+      return;
+    }
+
+    throw new Error('传入geometryType的数据未知');
   }
 
   init() {
@@ -231,7 +274,7 @@ class DecorationDesignRender {
     const baseWallLength = 60; // 墙体的长度
     // 创建墙角的柱子
     const pillarMaterial = new MeshStandardMaterial({
-        color: pillarColor,
+      color: pillarColor,
     });
     const pillarGeometry = new BoxGeometry(this.wallDepth, this.wallHeight, this.wallDepth);
 
@@ -239,24 +282,28 @@ class DecorationDesignRender {
     // 左上角
     pillarMesh1.translateX(-baseWallLength);
     pillarMesh1.translateZ(-baseWallLength / 2);
+    this.pillarPositionList.push([-baseWallLength, -baseWallLength / 2]);
     this.pillarMeshGroup.add(pillarMesh1);
 
     const pillarMesh2 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
     // 左下角
     pillarMesh2.translateX(-baseWallLength / 2);
     pillarMesh2.translateZ(baseWallLength / 2);
+    this.pillarPositionList.push([-baseWallLength / 2, baseWallLength / 2]);
     this.pillarMeshGroup.add(pillarMesh2);
 
     const pillarMesh3 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
     // 右下角
     pillarMesh3.translateX(baseWallLength / 2);
     pillarMesh3.translateZ(baseWallLength / 2);
+    this.pillarPositionList.push([baseWallLength / 2, baseWallLength / 2]);
     this.pillarMeshGroup.add(pillarMesh3);
 
     const pillarMesh4 = new Mesh(pillarGeometry.clone(), pillarMaterial.clone());
     // 右上角
     pillarMesh4.translateX(baseWallLength);
     pillarMesh4.translateZ(-baseWallLength / 2);
+    this.pillarPositionList.push([baseWallLength, -baseWallLength / 2]);
     this.pillarMeshGroup.add(pillarMesh4);
 
     // 使用四个柱子的坐标创建墙体
@@ -331,11 +378,60 @@ class DecorationDesignRender {
     this.scene.add(mesh);
   }
 
+  planeInit() {
+    // 创建柱子的平面
+    const pillarMaterial = new MeshBasicMaterial({
+      color: pillarColor,
+      side: DoubleSide,
+    });
+    const pillarGeometry = new PlaneGeometry(this.wallDepth, this.wallDepth);
+    // 创建柱子
+    this.pillarPositionList.forEach(([x, z]) => {
+      const pillarMesh = new Mesh(pillarGeometry, pillarMaterial);
+      pillarMesh.translateX(x);
+      pillarMesh.translateZ(z);
+      pillarMesh.rotateX(-Math.PI / 2);
+      this.planePillarMeshGroup.add(pillarMesh);
+    });
+    // 创建墙体
+    this.pillarPositionList.concat([this.pillarPositionList[0]]).forEach((item, index, array) => {
+      if (index >= array.length - 1) return;
+      const [x1, z1] = item;
+      const [x2, z2] = array[index + 1];
+      this.createWallMesh(
+        { x: x1, z: z1 },
+        { x: x2, z: z2 },
+        index % 2 === 0 ? 'z' : 'x',
+        'plane',
+      );
+    });
+  }
+
   setControlMode(control) {
     control.mouseButtons = {
       RIGHT: MOUSE.ROTATE,
       MIDDLE: MOUSE.DOLLY,
     };
+  }
+
+  handleSetRandomWall(val) {
+    console.log(val);
+
+    if (val) {
+      // 开始自定义墙体，隐藏当前的墙体
+      this.wallMeshGroup.visible = false;
+      this.pillarMeshGroup.visible = false;
+      // 显示平面
+      this.planeWallMeshGroup.visible = true;
+      this.planePillarMeshGroup.visible = true;
+    } else {
+      // 显示自定义之后的墙体
+      this.wallMeshGroup.visible = true;
+      this.pillarMeshGroup.visible = true;
+      // 隐藏平面
+      this.planeWallMeshGroup.visible = false;
+      this.planePillarMeshGroup.visible = false;
+    }
   }
 
   guiInit() {
@@ -365,7 +461,8 @@ class DecorationDesignRender {
 
     wallFuncFolder
       .add(this.funcValue, 'isModifyWall')
-      .name('自定义柱子');
+      .name('自定义墙体')
+      .onChange(this.handleSetRandomWall.bind(this));
     wallFuncFolder
       .add(guiFunc, 'addPillar')
       .name('添加柱子');
