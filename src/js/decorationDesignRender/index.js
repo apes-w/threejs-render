@@ -20,6 +20,8 @@ import {
   ShapeGeometry,
 } from 'three';
 import * as dat from 'dat.gui';
+import gsap from 'gsap';
+import { cloneDeep } from 'lodash';
 import assetImage from '@/assets/image/five.jpeg';
 
 import vertexShader from './shader/vertexShader.glsl';
@@ -35,6 +37,18 @@ const wallColor = new Color('#D8BFD8');
 const pillarColor = new Color('#ADD8E6');
 // 度数 - 1°
 const singleRad = Math.PI / 180;
+
+const planePillarPlaneUniforms = {
+  uIsFlash: {
+    value: false,
+  },
+  uFlashLevel: {
+    value: 0,
+  },
+  uPillarLowerColor: {
+    value: new Color('#89C5D9'),
+  },
+};
 
 /*
   装修移动墙体的思路
@@ -64,6 +78,10 @@ class DecorationDesignRender {
     this.planePillarMeshGroup = new Group(); // 代表柱子的平面
     // 所有柱子对应的位置
     this.pillarPositionList = [];
+    this.planePillarMaterialUniformList = [];
+    this.planePillarMaterialAnimateList = [];
+    // 所有墙体的位置
+    this.wallPositionList = [];
 
     this.debugMesh = {};
     this.debugUniformParams = {};
@@ -74,6 +92,11 @@ class DecorationDesignRender {
     this.scene.add(this.planePillarMeshGroup);
     this.planeWallMeshGroup.visible = false;
     this.planePillarMeshGroup.visible = false;
+
+    // 生成 GUI 界面的参数
+    this.funcValue = {
+      isModifyWall: false,
+    };
 
     this.init();
     // 代表墙体和柱子的平面的初始化方法
@@ -307,43 +330,29 @@ class DecorationDesignRender {
     this.pillarMeshGroup.add(pillarMesh4);
 
     // 使用四个柱子的坐标创建墙体
-    this.createWallMesh(
+    this.wallPositionList.push([
       { x: -baseWallLength, z: -baseWallLength / 2 }, // 左上角
       { x: -baseWallLength / 2, z: baseWallLength / 2 }, // 左下角
       'z',
-    );
-    this.createWallMesh(
+    ]);
+    this.wallPositionList.push([
       { x: -baseWallLength / 2, z: baseWallLength / 2 }, // 左下角
       { x: baseWallLength / 2, z: baseWallLength / 2 }, // 右下角
       'x',
-    );
-    this.createWallMesh(
+    ]);
+    this.wallPositionList.push([
       { x: baseWallLength / 2, z: baseWallLength / 2 }, // 右下角
       { x: baseWallLength, z: -baseWallLength / 2 }, // 右上角
       'z',
-    );
-    this.createWallMesh(
+    ]);
+    this.wallPositionList.push([
       { x: baseWallLength, z: -baseWallLength / 2 }, // 右上角
       { x: -baseWallLength, z: -baseWallLength / 2 }, // 左上角
       'x',
-    );
-
-    // const material = new ShaderMaterial({
-    //   vertexShader,
-    //   fragmentShader,
-    // });
-
-    // // 创建初始的四面墙
-    // const baseWallLength = 60; // 墙体的长度
-    // const wallTranslateLength = Math.pow(Math.pow(baseWallLength / 2, 2) * 2, 0.5);
-
-    // const wallGeometry1 = this.getLineGeometry(baseWallLength, singleRad * 90, -singleRad * 90);
-    // const wallMesh1 = new Mesh(wallGeometry1, material.clone());
-    // wallMesh1.translateOnAxis(
-    //   new Vector3(-baseWallLength / 2 - this.wallDepth, 0, baseWallLength / 2 + this.wallDepth).normalize(),
-    //   wallTranslateLength
-    // );
-    // this.wallMeshGroup.add(wallMesh1);
+    ]);
+    this.wallPositionList.forEach(item => {
+      this.createWallMesh(...item);
+    });
   }
 
   debugInit() {
@@ -379,18 +388,56 @@ class DecorationDesignRender {
   }
 
   planeInit() {
-    // 创建柱子的平面
-    const pillarMaterial = new MeshBasicMaterial({
-      color: pillarColor,
-      side: DoubleSide,
-    });
-    const pillarGeometry = new PlaneGeometry(this.wallDepth, this.wallDepth);
-    // 创建柱子
-    this.pillarPositionList.forEach(([x, z]) => {
+    this.pillarPositionList.forEach(([x, z], index) => {
+      // 创建柱子的平面
+      const pillarMaterial = new MeshBasicMaterial({
+        color: pillarColor,
+        side: DoubleSide,
+      });
+      this.planePillarMaterialUniformList.push(cloneDeep(planePillarPlaneUniforms));
+      const tween = gsap.to(this.planePillarMaterialUniformList[index].uFlashLevel, {
+        value: 2,
+        duration: 3.7,
+        ease: 'none',
+        repeat: -1,
+        paused: true,
+      });
+      console.log(tween);
+      tween.pause();
+      this.planePillarMaterialAnimateList.push(tween);
+      pillarMaterial.onBeforeCompile = (shader) => {
+        shader.uniforms = {
+          ...shader.uniforms,
+          ...this.planePillarMaterialUniformList[index],
+        };
+        // console.log(shader.fragmentShader);
+
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <common>',
+          `
+          uniform bool uIsFlash;
+          uniform float uFlashLevel;
+          uniform vec3 uPillarLowerColor;
+          #include <common>
+          `
+        );
+
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <dithering_fragment>',
+          `
+          #include <dithering_fragment>
+          if (uIsFlash) {
+            gl_FragColor = mix(gl_FragColor, vec4(uPillarLowerColor, 1.0), 1.0 - abs(uFlashLevel - 1.0));
+          }
+          `
+        );
+      };
+      const pillarGeometry = new PlaneGeometry(this.wallDepth, this.wallDepth);
       const pillarMesh = new Mesh(pillarGeometry, pillarMaterial);
       pillarMesh.translateX(x);
       pillarMesh.translateZ(z);
       pillarMesh.rotateX(-Math.PI / 2);
+      pillarMesh.userData.meshIndex = index;
       this.planePillarMeshGroup.add(pillarMesh);
     });
     // 创建墙体
@@ -443,10 +490,6 @@ class DecorationDesignRender {
       return false;
     });
 
-    this.funcValue = {
-      isModifyWall: false,
-    };
-
     const wallFuncFolder = gui.addFolder('墙体操作');
 
     // 添加按钮
@@ -485,20 +528,45 @@ class DecorationDesignRender {
   handleClick(e) {
     const ray = this.getRaycaster(e.clientX, e.clientY);
 
-    const interArr = ray.intersectObjects(this.wallMeshGroup.children);
-    console.log(interArr);
-    if (interArr.length) {
-      const [
-        {
-          face,
-          object,
-          point,
-          uv,
-        },
-      ] = interArr;
-      object.material.uniforms.uClickPoint.value = point;
-      object.material.uniforms.uClickPointUV.value = uv;
-      object.material.uniforms.uClickNormal.value = face.normal.normalize();
+    if (!this.funcValue.isModifyWall) {
+      const interArr = ray.intersectObjects(this.wallMeshGroup.children);
+      console.log(interArr);
+      if (interArr.length) {
+        const [
+          {
+            face,
+            object,
+            point,
+            uv,
+          },
+        ] = interArr;
+        object.material.uniforms.uClickPoint.value = point;
+        object.material.uniforms.uClickPointUV.value = uv;
+        object.material.uniforms.uClickNormal.value = face.normal.normalize();
+      }
+    } else {
+      const interArr = ray.intersectObjects(this.planePillarMeshGroup.children);
+      console.log(interArr);
+      if (interArr.length) {
+        const [
+          {
+            object,
+          },
+        ] = interArr;
+        const { meshIndex } = object.userData;
+        let isResetNormal = false;
+        this.planePillarMaterialAnimateList.forEach((item, index) => {
+          this.planePillarMaterialUniformList[index].uIsFlash.value = false;
+          if (item.isActive()) {
+            isResetNormal = index === meshIndex;
+            item.pause();
+          }
+        });
+        if (!isResetNormal) {
+          this.planePillarMaterialUniformList[meshIndex].uIsFlash.value = true;
+          this.planePillarMaterialAnimateList[meshIndex].restart();
+        }
+      }
     }
   }
 }
