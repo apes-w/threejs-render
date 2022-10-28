@@ -66,6 +66,7 @@ renderer.toneMappingExposure = 0.25; // 调整曝光程度，实现夜晚的效�
 // 添加轨道控制器
 // eslint-disable-next-line
 const controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
 // controls.mouseButtons = {
 //   MIDDLE: MOUSE.DOLLY,
 //   RIGHT: MOUSE.ROTATE,
@@ -100,8 +101,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 //   { scene },
 // );
 
-const decorationDesignRender = new DecorationDesignRender({ scene, camera });
-decorationDesignRender.setControlMode(controls);
+const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -119,6 +119,7 @@ function animeRender() {
   renderer.render(scene, camera);
 
   _oldTime = nowTime;
+  // controls.update();
   requestAnimationFrame(animeRender);
 }
 
@@ -149,11 +150,11 @@ window.addEventListener('click', (e) => {
 // 监听键盘- 按下 - 长按会一直触发这个事件
 window.addEventListener('keydown', (e) => {
   console.log('键盘按下');
-  // splitCubeRender.handleKeyDown(e);
+  decorationDesignRender.handleKeyDown(e);
 });
 
 // 监听键盘
+// eslint-disable-next-line
 window.addEventListener('keyup', (e) => {
-  console.log('键盘抬起');
-  // splitCubeRender.handleKeyUp(e);
+  decorationDesignRender.handleKeyUp(e);
 });

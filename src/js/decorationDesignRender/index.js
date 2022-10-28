@@ -2,7 +2,6 @@ import {
   BoxGeometry,
   PlaneGeometry,
   ExtrudeGeometry,
-  BufferGeometry,
   MeshStandardMaterial,
   Mesh,
   Color,
@@ -17,7 +16,6 @@ import {
   ShaderMaterial,
   Group,
   DoubleSide,
-  ShapeGeometry,
 } from 'three';
 import * as dat from 'dat.gui';
 import gsap from 'gsap';
@@ -66,9 +64,13 @@ const planePillarPlaneUniforms = {
 
 class DecorationDesignRender {
   constructor(val) {
-    const { scene, camera } = val;
+    const { scene, camera, controls } = val;
     this.scene = scene;
     this.camera = camera;
+    this.controls = controls;
+
+    // 是否已经按下了control按钮
+    this.isControlBtn = false;
 
     this.wallMeshGroup = new Group(); // 真实墙体
     this.wallDepth = 6; // 墙体的默认厚度
@@ -82,6 +84,8 @@ class DecorationDesignRender {
     this.planePillarMaterialAnimateList = [];
     // 所有墙体的位置
     this.wallPositionList = [];
+    // 选中的物体
+    this.selectPillar = {};
 
     this.debugMesh = {};
     this.debugUniformParams = {};
@@ -93,16 +97,71 @@ class DecorationDesignRender {
     this.planeWallMeshGroup.visible = false;
     this.planePillarMeshGroup.visible = false;
 
-    // 生成 GUI 界面的参数
-    this.funcValue = {
-      isModifyWall: false,
-    };
+    this.gui = new dat.GUI();
 
     this.init();
     // 代表墙体和柱子的平面的初始化方法
     this.planeInit();
     // this.debugInit();
+    this.guiProxyInit();
     this.guiInit();
+    this.controlsInit();
+  }
+
+  guiProxyInit() {
+    // 生成 GUI 界面的参数
+    this.funcValue = new Proxy(
+      {
+        isModifyWall: false,
+        isAdd: false,
+        isRemove: false,
+      },
+      {
+        get: (target, prop) => {
+          // console.log('proxy get', target, prop);
+          return target[prop];
+        },
+        set: (target, prop, value) => {
+          // 设置添加和删除柱子的时候，需要做到互斥
+          // 只能有一个为 true
+          const controlPillarParams = ['isAdd', 'isRemove'];
+          if (controlPillarParams.includes(prop)) {
+            // 检测是否开启了自定义
+            if (!target.isModifyWall) {
+              alert('请先开始自定义墙体');
+              this.gui.updateDisplay();
+              return false;
+            }
+            const oldVal = controlPillarParams.reduce((val, item) => {
+              if (item.includes(prop)) {
+                val[item] = value;
+              } else if (value && !item.includes(prop)) {
+                val[item] = false;
+              } else {
+                val[item] = target[item];
+              }
+              return val;
+            }, {});
+            Object.entries(oldVal).forEach((item) => {
+              const [newKey, newVal] = item;
+              target[newKey] = newVal;
+            });
+            this.gui.updateDisplay();
+            return true;
+          }
+          if (prop.includes('isModifyWall') && !value) {
+            Object.keys(target).forEach(item => {
+              target[item] = false;
+            });
+            this.gui.updateDisplay();
+            return true;
+          }
+          // console.log('proxy set', target[prop], prop);
+          target[prop] = value;
+          return true;
+        }
+      },
+    );
   }
 
   // 以坐标原点为中心
@@ -397,12 +456,11 @@ class DecorationDesignRender {
       this.planePillarMaterialUniformList.push(cloneDeep(planePillarPlaneUniforms));
       const tween = gsap.to(this.planePillarMaterialUniformList[index].uFlashLevel, {
         value: 2,
-        duration: 3.7,
+        duration: 3,
         ease: 'none',
         repeat: -1,
         paused: true,
       });
-      console.log(tween);
       tween.pause();
       this.planePillarMaterialAnimateList.push(tween);
       pillarMaterial.onBeforeCompile = (shader) => {
@@ -454,13 +512,14 @@ class DecorationDesignRender {
     });
   }
 
-  setControlMode(control) {
-    control.mouseButtons = {
+  controlsInit() {
+    this.controls.mouseButtons = {
       RIGHT: MOUSE.ROTATE,
       MIDDLE: MOUSE.DOLLY,
     };
   }
 
+  // 开始进行自定义墙体
   handleSetRandomWall(val) {
     console.log(val);
 
@@ -471,47 +530,99 @@ class DecorationDesignRender {
       // 显示平面
       this.planeWallMeshGroup.visible = true;
       this.planePillarMeshGroup.visible = true;
+
+      // 记录当前相机的位置
+      // console.log();;
+      // this.controls.position0 = this.controls.getPolarAngle();
+      this.controls.saveState();
+      // this.controls.update();
     } else {
+      this.selectPillar = {};
       // 显示自定义之后的墙体
       this.wallMeshGroup.visible = true;
       this.pillarMeshGroup.visible = true;
       // 隐藏平面
       this.planeWallMeshGroup.visible = false;
       this.planePillarMeshGroup.visible = false;
+      // 清除所有柱子平面的闪烁
+      this.planePillarMaterialAnimateList.forEach(item => {
+        if (item.isActive()) {
+          item.pause();
+        }
+      });
+      this.planePillarMaterialUniformList.forEach(item => {
+        item.uFlashLevel.value = 0;
+        item.uIsFlash.value = false;
+      });
+
+      this.controls.reset();
     }
   }
 
-  guiInit() {
-    const gui = new dat.GUI();
-    gui.width = 300;
+  // 开始添加柱子
+  handleAddPillar(val) {
+    console.log('添加柱子的表示', val);
 
-    gui.domElement.addEventListener('click', (e) => {
+    // 清除所有柱子平面的闪烁
+    this.planePillarMaterialAnimateList.forEach(item => {
+      if (item.isActive()) {
+        item.pause();
+      }
+    });
+    this.planePillarMaterialUniformList.forEach(item => {
+      item.uFlashLevel.value = 0;
+      item.uIsFlash.value = false;
+    });
+  }
+
+  // 开始删除柱子
+  handleRemovePillar(val) {
+    console.log('删除柱子的表示', val);
+
+    // 清除所有柱子平面的闪烁
+    this.planePillarMaterialAnimateList.forEach(item => {
+      if (item.isActive()) {
+        item.pause();
+      }
+    });
+    this.planePillarMaterialUniformList.forEach(item => {
+      item.uFlashLevel.value = 0;
+      item.uIsFlash.value = false;
+    });
+  }
+
+  guiInit() {
+    this.gui.width = 300;
+
+    this.gui.domElement.addEventListener('click', (e) => {
       e.stopPropagation();
       return false;
     });
 
-    const wallFuncFolder = gui.addFolder('墙体操作');
+    const wallFuncFolder = this.gui.addFolder('墙体操作');
 
-    // 添加按钮
-    const guiFunc = {
-      addPillar: () => {
-        console.log('添加柱子');
-      },
-      removePillar: () => {
-        console.log('删除柱子');
-      },
-    };
+    // // 添加按钮
+    // const guiFunc = {
+    //   addPillar: () => {
+    //     console.log('添加柱子');
+    //   },
+    //   removePillar: () => {
+    //     console.log('删除柱子');
+    //   },
+    // };
 
     wallFuncFolder
       .add(this.funcValue, 'isModifyWall')
       .name('自定义墙体')
       .onChange(this.handleSetRandomWall.bind(this));
     wallFuncFolder
-      .add(guiFunc, 'addPillar')
-      .name('添加柱子');
+      .add(this.funcValue, 'isAdd')
+      .name('添加柱子')
+      .onChange(this.handleAddPillar.bind(this));
     wallFuncFolder
-      .add(guiFunc, 'removePillar')
-      .name('删除柱子');
+      .add(this.funcValue, 'isRemove')
+      .name('删除柱子')
+      .onChange(this.handleRemovePillar.bind(this));
   }
 
   // 根据相机位置和在屏幕上点击的位置生成一条射线
@@ -525,10 +636,25 @@ class DecorationDesignRender {
     return ray;
   }
 
+  handleKeyDown(e) {
+    if (e.keyCode === 17) {
+      this.isControlBtn = true;
+    }
+  }
+
+  handleKeyUp(e) {
+    if (e.keyCode === 17) {
+      this.isControlBtn = false;
+    }
+  }
+
   handleClick(e) {
     const ray = this.getRaycaster(e.clientX, e.clientY);
 
+    console.log(ray);
+
     if (!this.funcValue.isModifyWall) {
+      // 未开启自定义墙体，需要在墙体上绘制方形区域
       const interArr = ray.intersectObjects(this.wallMeshGroup.children);
       console.log(interArr);
       if (interArr.length) {
@@ -545,6 +671,7 @@ class DecorationDesignRender {
         object.material.uniforms.uClickNormal.value = face.normal.normalize();
       }
     } else {
+      // 开启了自定义墙体，需要针对面进行射线拾取
       const interArr = ray.intersectObjects(this.planePillarMeshGroup.children);
       console.log(interArr);
       if (interArr.length) {
@@ -565,8 +692,31 @@ class DecorationDesignRender {
         if (!isResetNormal) {
           this.planePillarMaterialUniformList[meshIndex].uIsFlash.value = true;
           this.planePillarMaterialAnimateList[meshIndex].restart();
+          this.selectPillar = { meshIndex };
+        } else {
+          this.selectPillar = {};
         }
       }
+    }
+
+    if (
+      this.funcValue.isModifyWall
+      && this.funcValue.isAdd
+    ) {
+      // 新增柱子
+      const {
+        ray: { direction, origin },
+      } = ray;
+      let x = 0;
+      let z = 0;
+      if (direction.z !== 0) {
+        // todo ------ 求出 yOz 平面的 tan 值
+      }
+    } else if (
+      this.funcValue.isModifyWall
+      && this.funcValue.isRemove
+    ) {
+      // 删除柱子
     }
   }
 }
