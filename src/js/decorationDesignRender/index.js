@@ -331,6 +331,7 @@ class DecorationDesignRender {
       const translateLength = startTranslateVec.length();
       mesh.translateOnAxis(new Vector3(startTranslateVec.x, 0, -startTranslateVec.y).normalize(), translateLength);
       this.wallMeshGroup.add(mesh);
+      console.log(this.wallMeshGroup);
       return;
     }
 
@@ -705,12 +706,16 @@ class DecorationDesignRender {
     ) {
       // 新增柱子
       const {
-        ray: { direction, origin },
+        ray: clickPointRay,
       } = ray;
-      let x = 0;
-      let z = 0;
+      const { direction, origin } = clickPointRay;
       if (direction.z !== 0) {
-        // todo ------ 求出 yOz 平面的 tan 值
+        const angle = direction.angleTo(new Vector3(direction.x, 0, direction.z));
+        const moveLength = Math.abs(origin.y) / Math.sin(angle);
+        const point = new Vector3(0, 0, 0);
+        clickPointRay.at(moveLength, point);
+        // 只用x，z的坐标
+        // todo --- 优化渲染柱子的逻辑，使用数组的方式管理柱子的墙体，之后只要对数组进行操作即可
       }
     } else if (
       this.funcValue.isModifyWall
