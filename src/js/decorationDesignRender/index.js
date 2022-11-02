@@ -16,6 +16,7 @@ import {
   ShaderMaterial,
   Group,
   DoubleSide,
+  Plane,
 } from 'three';
 import * as dat from 'dat.gui';
 import gsap from 'gsap';
@@ -25,6 +26,8 @@ import assetImage from '@/assets/image/five.jpeg';
 import vertexShader from './shader/vertexShader.glsl';
 import fragmentShader from './shader/fragmentShader.glsl';
 
+// xOz 平面
+const xOxAxesPlane = new Plane(new Vector3(0, 1, 0), 0);
 
 const textureLoader = new TextureLoader();
 const imgTex = textureLoader.load(assetImage);
@@ -709,14 +712,17 @@ class DecorationDesignRender {
         ray: clickPointRay,
       } = ray;
       const { direction, origin } = clickPointRay;
-      if (direction.z !== 0) {
-        const angle = direction.angleTo(new Vector3(direction.x, 0, direction.z));
-        const moveLength = Math.abs(origin.y) / Math.sin(angle);
-        const point = new Vector3(0, 0, 0);
-        clickPointRay.at(moveLength, point);
-        // 只用x，z的坐标
-        // todo --- 优化渲染柱子的逻辑，使用数组的方式管理柱子的墙体，之后只要对数组进行操作即可
-      }
+      const axesPoint = new Vector3(0, 0, 0);
+      clickPointRay.intersectPlane(xOxAxesPlane, axesPoint);
+      console.log(axesPoint);
+      // if (direction.z !== 0) {
+      //   const angle = direction.angleTo(new Vector3(direction.x, 0, direction.z));
+      //   const moveLength = Math.abs(origin.y) / Math.sin(angle);
+      //   const point = new Vector3(0, 0, 0);
+      //   clickPointRay.at(moveLength, point);
+      //   // 只用x，z的坐标
+      //   // todo --- 优化渲染柱子的逻辑，使用数组的方式管理柱子的墙体，之后只要对数组进行操作即可
+      // }
     } else if (
       this.funcValue.isModifyWall
       && this.funcValue.isRemove
