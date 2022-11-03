@@ -94,14 +94,14 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const repeatCubeRender = new RepeatCubeRender({ scene });
 
 // eslint-disable-next-line
-// const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
+const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 
 // eslint-disable-next-line
 // const splitCubeRender = new SplitCubeRender(
 //   { scene },
 // );
 
-const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
+// const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -144,17 +144,17 @@ window.addEventListener('resize', () => {
 window.addEventListener('click', (e) => {
   console.log('触发点击事件');
   // fireworksRender.handleClick();
-  decorationDesignRender.handleClick(e);
+  // decorationDesignRender.handleClick(e);
 });
 
 // 监听键盘- 按下 - 长按会一直触发这个事件
 window.addEventListener('keydown', (e) => {
   console.log('键盘按下');
-  decorationDesignRender.handleKeyDown(e);
+  // decorationDesignRender.handleKeyDown(e);
 });
 
 // 监听键盘
 // eslint-disable-next-line
 window.addEventListener('keyup', (e) => {
-  decorationDesignRender.handleKeyUp(e);
+  // decorationDesignRender.handleKeyUp(e);
 });

@@ -3,6 +3,7 @@ import {
   TextureLoader,
   ShaderMaterial,
   Mesh,
+  Vector3,
   // BufferAttribute,
 } from 'three';
 
@@ -31,6 +32,9 @@ class CubeRender {
       uniforms: {
         uTexture: {
           value: texture,
+        },
+        uGeometrySize: {
+          value: new Vector3(40, 40, 40),
         },
       },
     });
