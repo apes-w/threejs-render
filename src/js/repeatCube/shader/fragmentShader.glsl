@@ -8,8 +8,27 @@ varying vec2 vUv;
 varying vec3 vPosition;
 varying vec3 vNormal;
 
+// 获取重复之后的点的坐标
+vec2 getScalePos(const in vec2 pos, const in vec2 maxSize) {
+  float x = pos.x;
+  float y = pos.y;
+  if (repeatNum <= 1.0) return vec2(x, y);
+
+  float diffX = pos.x - (-maxSize.x / 2.0);
+  float splitXVal = maxSize.x / repeatNum;
+  float scaleX = mod(diffX, splitXVal);
+  x = (-maxSize.x / 2.0) + (scaleX / splitXVal * maxSize.x);
+
+  float diffY = pos.y - (-maxSize.y / 2.0);
+  float splitYVal = maxSize.y / repeatNum;
+  float scaleY = mod(diffY, splitYVal);
+  y = (-maxSize.y / 2.0) + (scaleY / splitYVal * maxSize.y);
+
+  return vec2(x, y);
+}
+
 // pos 当前点；posCenter 当前点参考的中心点
-vec2 getNewPos(const in vec2 pos, const in vec2 posCenter, const in vec2 maxSize) {
+vec2 getNewPos(const in vec2 pos, const in vec2 maxSize) {
   float sqrtRes = 1.0 / sqrt(2.0);
   float x = 0.0;
   float y = 0.0;
@@ -87,32 +106,39 @@ void main() {
   // 直接修改点位坐标，根据旋转之后的点位坐标进行计算
   if (xDot > critical) {
     // x轴正方向
-    vec2 newPosVec = getNewPos(vPosition.yz, vec2(0.0, 0.0), uGeometrySize.yz);
+    // 把切分之后的局部坐标，根据比例，拓展到整个面上
+    vec2 scalePosVec = getScalePos(vPosition.yz, uGeometrySize.yz);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.yz);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.yz);
     texUV =  getTexUV(positionUV, vec2(0.0, 0.0));
   } else if (xDot < -critical) {
     // x轴负方向
-    vec2 newPosVec = getNewPos(vPosition.yz, vec2(0.0, 0.0), uGeometrySize.yz);
+    vec2 scalePosVec = getScalePos(vPosition.yz, uGeometrySize.yz);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.yz);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.yz);
     texUV = getTexUV(positionUV, vec2(0.0, 1.0));
   } else if (yDot > critical) {
     // y轴正方向
-    vec2 newPosVec = getNewPos(vPosition.xz, vec2(0.0, 0.0), uGeometrySize.xz);
+    vec2 scalePosVec = getScalePos(vPosition.xz, uGeometrySize.xz);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.xz);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.xz);
     texUV = getTexUV(positionUV, vec2(1.0, 0.0));
   } else if (yDot < -critical) {
     // y轴负方向
-    vec2 newPosVec = getNewPos(vPosition.xz, vec2(0.0, 0.0), uGeometrySize.xz);
+    vec2 scalePosVec = getScalePos(vPosition.xz, uGeometrySize.xz);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.xz);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.xz);
     texUV = getTexUV(positionUV, vec2(1.0, 1.0));
   } else if (zDot > critical) {
     // z轴正方向
-    vec2 newPosVec = getNewPos(vPosition.xy, vec2(0.0, 0.0), uGeometrySize.xy);
+    vec2 scalePosVec = getScalePos(vPosition.xy, uGeometrySize.xy);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.xy);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.xy);
     texUV = getTexUV(positionUV, vec2(2.0, 0.0));
   } else if (zDot < -critical) {
     // z轴负方向
-    vec2 newPosVec = getNewPos(vPosition.xy, vec2(0.0, 0.0), uGeometrySize.xy);
+    vec2 scalePosVec = getScalePos(vPosition.xy, uGeometrySize.xy);
+    vec2 newPosVec = getNewPos(scalePosVec, uGeometrySize.xy);
     positionUV = getNewPositionUV(newPosVec, uGeometrySize.xy);
     texUV = getTexUV(positionUV, vec2(2.0, 1.0));
   }

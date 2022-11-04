@@ -40,7 +40,7 @@ class CubeRender {
           value: new Vector3(40, 40, 40),
         },
         repeatNum: {
-          value: 1,
+          value: 3,
         },
       },
     });
