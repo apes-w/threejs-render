@@ -29,12 +29,18 @@ class CubeRender {
     const material = new ShaderMaterial({
       vertexShader,
       fragmentShader,
+      defines: {
+        PI: 3.141592653589793,
+      },
       uniforms: {
         uTexture: {
           value: texture,
         },
         uGeometrySize: {
           value: new Vector3(40, 40, 40),
+        },
+        repeatNum: {
+          value: 1,
         },
       },
     });

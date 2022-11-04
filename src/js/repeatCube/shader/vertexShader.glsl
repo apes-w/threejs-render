@@ -8,11 +8,11 @@ varying vec3 vNormal;
 
 void main() {
   vUv = uv;
-  vPosition = position;
   vNormal = normal;
 
   vec4 sourcePosition = vec4(position, 1.0);
   vec4 modelPosition = modelMatrix * sourcePosition;
+  vPosition = modelPosition.xyz;
   vec4 viewPosition = viewMatrix * modelPosition;
   gl_Position = projectionMatrix * viewPosition;
 }
