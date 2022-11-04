@@ -27,7 +27,7 @@ vec2 getScalePos(const in vec2 pos, const in vec2 maxSize) {
   return vec2(x, y);
 }
 
-// pos 当前点；posCenter 当前点参考的中心点
+// 根据当前点的坐标，得到每一个位置对应的纹理
 vec2 getNewPos(const in vec2 pos, const in vec2 maxSize) {
   float sqrtRes = 1.0 / sqrt(2.0);
   float x = 0.0;
@@ -102,8 +102,7 @@ void main() {
   float yDot = dot(vNormal, vec3(0.0, 1.0, 0.0));
   float zDot = dot(vNormal, vec3(0.0, 0.0, 1.0));
 
-  // todo --- 实现旋转的效果
-  // 直接修改点位坐标，根据旋转之后的点位坐标进行计算
+  // 直接修改点位坐标，根据旋转之后的点位坐标进行计算映射的UV坐标
   if (xDot > critical) {
     // x轴正方向
     // 把切分之后的局部坐标，根据比例，拓展到整个面上
