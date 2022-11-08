@@ -31,6 +31,9 @@ import SplitCubeRender from './src/js/splitCubeRender';
 // eslint-disable-next-line
 import DecorationDesignRender from './src/js/decorationDesignRender';
 
+// 渲染大量的点，并且测量出点之间的距离
+import MultipleParticleRender from './src/js/multipleParticalRender'
+
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
 const sceneHeight = window.innerHeight;
@@ -94,7 +97,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const repeatCubeRender = new RepeatCubeRender({ scene });
 
 // eslint-disable-next-line
-const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
+// const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 
 // eslint-disable-next-line
 // const splitCubeRender = new SplitCubeRender(
@@ -102,6 +105,8 @@ const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
 // );
 
 // const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
+
+const multipleParticleRender = new MultipleParticleRender({ scene });
 
 const clock = new Clock();
 // eslint-disable-next-line
