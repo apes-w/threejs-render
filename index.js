@@ -32,7 +32,7 @@ import SplitCubeRender from './src/js/splitCubeRender';
 import DecorationDesignRender from './src/js/decorationDesignRender';
 
 // 渲染大量的点，并且测量出点之间的距离
-import MultipleParticleRender from './src/js/multipleParticalRender'
+import MultipleParticleRender from './src/js/multipleParticleRender';
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -106,6 +106,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
 
+// eslint-disable-next-line
 const multipleParticleRender = new MultipleParticleRender({ scene });
 
 const clock = new Clock();
@@ -147,19 +148,20 @@ window.addEventListener('resize', () => {
 
 // 整体的点击事件
 window.addEventListener('click', (e) => {
-  console.log('触发点击事件');
+  console.log('触发点击事件', e);
   // fireworksRender.handleClick();
   // decorationDesignRender.handleClick(e);
 });
 
 // 监听键盘- 按下 - 长按会一直触发这个事件
 window.addEventListener('keydown', (e) => {
-  console.log('键盘按下');
+  console.log('键盘按下', e);
   // decorationDesignRender.handleKeyDown(e);
 });
 
 // 监听键盘
 // eslint-disable-next-line
 window.addEventListener('keyup', (e) => {
+  console.log('键盘抬起', e);
   // decorationDesignRender.handleKeyUp(e);
 });

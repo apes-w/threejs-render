@@ -711,7 +711,7 @@ class DecorationDesignRender {
       const {
         ray: clickPointRay,
       } = ray;
-      const { direction, origin } = clickPointRay;
+      // const { direction, origin } = clickPointRay;
       const axesPoint = new Vector3(0, 0, 0);
       clickPointRay.intersectPlane(xOxAxesPlane, axesPoint);
       console.log(axesPoint);
