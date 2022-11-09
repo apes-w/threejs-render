@@ -66,7 +66,7 @@ function getMaxPosition(list) {
   const tempX = list.map(item => item[0]);
   const tempY = list.map(item => item[1]);
   mergeSort(tempX);
-  // mergeSort(tempY);
+  mergeSort(tempY);
   return {
     maxX: [tempX.shift(), tempX.pop()],
     maxY: [tempY.shift(), tempY.pop()],
@@ -83,8 +83,6 @@ class MultipleParticleRender {
     this.pointMesh = null;
     this.baseSize = { x: 80, y: 70 };
 
-    console.log(this.maxArea);
-
     this.init();
     this.pointInit();
   }
@@ -96,13 +94,21 @@ class MultipleParticleRender {
     });
 
     this.mesh = new Mesh(geometry, material);
+    console.log(this.mesh);
     this.scene.add(this.mesh);
   }
 
   pointInit() {
+    const { maxX, maxY } = this.maxArea;
+    const maxXAbs = Math.max(Math.abs(maxX[0]), Math.abs(maxX[1]));
+    const maxYAbs = Math.max(Math.abs(maxY[0]), Math.abs(maxY[1]));
     const geometry = new BufferGeometry();
     const positionList = Float32Array.from(this.pointList.reduce((val, item) => {
-      val.push(...item, 0.1);
+      // val.push(...item, 0.1);
+      let [x, y] = item;
+      x = this.baseSize.x / 2 * (x / maxXAbs);
+      y = this.baseSize.y / 2 * (y / maxYAbs);
+      val.push(x, y, 0.1);
       return val;
     }, []));
     geometry.setAttribute('position', new BufferAttribute(positionList, 3));
@@ -110,15 +116,19 @@ class MultipleParticleRender {
       vertexShader,
       fragmentShader,
       uniforms: {
-        uMaxAreaSize: {
-          value: new Vector2(this.baseSize.x, this.baseSize.y),
+        uMaxAreaX: {
+          value: Math.max(Math.abs(maxX[0]), Math.abs(maxX[1])),
         },
-        uAxesScale: {
-          value: new Vector2(2, 3),
+        uMaxAreaY: {
+          value: Math.max(Math.abs(maxY[0]), Math.abs(maxY[1])),
+        },
+        uAreaSize: {
+          value: new Vector2(this.baseSize.x, this.baseSize.y),
         },
       },
     });
     this.pointMesh = new Points(geometry, material);
+    console.log(this.pointMesh);
     this.pointMesh.scale.set(1.5, 1.5, 1.5);
     this.scene.add(this.pointMesh);
   }
