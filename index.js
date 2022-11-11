@@ -107,7 +107,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
 
 // eslint-disable-next-line
-const multipleParticleRender = new MultipleParticleRender({ scene });
+const multipleParticleRender = new MultipleParticleRender({ scene, camera });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -151,6 +151,7 @@ window.addEventListener('click', (e) => {
   console.log('触发点击事件', e);
   // fireworksRender.handleClick();
   // decorationDesignRender.handleClick(e);
+  multipleParticleRender.handleClick(e);
 });
 
 // 监听键盘- 按下 - 长按会一直触发这个事件

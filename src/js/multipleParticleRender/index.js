@@ -1,14 +1,16 @@
 import {
   Mesh,
   PlaneGeometry,
+  BufferGeometry,
+  CircleGeometry,
   MeshBasicMaterial,
   // PointsMaterial,
-  ShaderMaterial,
+  // ShaderMaterial,
   Color,
-  BufferGeometry,
   BufferAttribute,
   Points,
   Vector2,
+  Raycaster,
 } from 'three';
 
 import vertexShader from './shader/vertex.glsl';
@@ -75,8 +77,9 @@ function getMaxPosition(list) {
 
 class MultipleParticleRender {
   constructor(threeVal) {
-    const { scene } = threeVal;
+    const { scene, camera } = threeVal;
     this.scene = scene;
+    this.camera = camera;
     this.pointList = getRandomPoint();
     this.maxArea = getMaxPosition(this.pointList);
     this.mesh = null;
@@ -96,41 +99,79 @@ class MultipleParticleRender {
     this.mesh = new Mesh(geometry, material);
     console.log(this.mesh);
     this.scene.add(this.mesh);
+    
   }
 
   pointInit() {
+    const baseCircleGeometry = new CircleGeometry(2, 26);
+    const material = new MeshBasicMaterial({
+      color: new Color('#CC7150'),
+    });
+    const mergeGeometry = new BufferGeometry();
+
+    const positionArr = [];
+    const normalArr = [];
+    const uvArr = [];
+    let tempArr = [];
     const { maxX, maxY } = this.maxArea;
     const maxXAbs = Math.max(Math.abs(maxX[0]), Math.abs(maxX[1]));
     const maxYAbs = Math.max(Math.abs(maxY[0]), Math.abs(maxY[1]));
-    const geometry = new BufferGeometry();
-    const positionList = Float32Array.from(this.pointList.reduce((val, item) => {
-      // val.push(...item, 0.1);
-      let [x, y] = item;
-      x = this.baseSize.x / 2 * (x / maxXAbs);
-      y = this.baseSize.y / 2 * (y / maxYAbs);
-      val.push(x, y, 0.1);
-      return val;
-    }, []));
-    geometry.setAttribute('position', new BufferAttribute(positionList, 3));
-    const material = new ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        uMaxAreaX: {
-          value: Math.max(Math.abs(maxX[0]), Math.abs(maxX[1])),
-        },
-        uMaxAreaY: {
-          value: Math.max(Math.abs(maxY[0]), Math.abs(maxY[1])),
-        },
-        uAreaSize: {
-          value: new Vector2(this.baseSize.x, this.baseSize.y),
-        },
-      },
+    const { x: baseSizeX, y: baseSizeY } = this.baseSize;
+    this.pointList.forEach(item => {
+      const [x, y] = item
+      const cloneGeometry = baseCircleGeometry.clone();
+      cloneGeometry.translate(
+        baseSizeX * (x / maxXAbs),
+        baseSizeY * (y / maxYAbs),
+        0.1
+      );
+      tempArr = cloneGeometry.getAttribute('position').array;
+      tempArr.forEach(numItem => {
+        positionArr.push(numItem);
+      });
+      tempArr = cloneGeometry.getAttribute('normal').array;
+      tempArr.forEach(numItem => {
+        normalArr.push(numItem);
+      });
+      tempArr = cloneGeometry.getAttribute('uv').array;
+      tempArr.forEach(numItem => {
+        uvArr.push(numItem);
+      });
+      cloneGeometry.dispose();
     });
-    this.pointMesh = new Points(geometry, material);
-    console.log(this.pointMesh);
-    this.pointMesh.scale.set(1.5, 1.5, 1.5);
+
+    mergeGeometry.setAttribute(
+      'position',
+      new BufferAttribute(Float32Array.from(positionArr), 3),
+    );
+    mergeGeometry.setAttribute(
+      'normal',
+      new BufferAttribute(Float32Array.from(normalArr), 3),
+    );
+    mergeGeometry.setAttribute(
+      'uv',
+      new BufferAttribute(Float32Array.from(uvArr), 3),
+    );
+
+    this.pointMesh = new Mesh(mergeGeometry, material);
     this.scene.add(this.pointMesh);
+  }
+
+  getRaycaster(width, height) {
+    const x = (width / window.innerWidth) * 2 - 1;
+    const y = (height / window.innerHeight) * 2 + 1;
+    const mouse = new Vector2(x, y);
+    const ray = new Raycaster();
+    ray.setFromCamera(mouse, this.camera);
+    return ray;
+  }
+
+  handleClick(e) {
+    const ray = this.getRaycaster(e.clientX, e.clientY);
+    console.log(ray);
+
+    const interArr = ray.intersectObject(this.pointMesh);
+    console.log(interArr);
   }
 }
 
