@@ -118,7 +118,7 @@ class MultipleParticleRender {
     const maxYAbs = Math.max(Math.abs(maxY[0]), Math.abs(maxY[1]));
     const { x: baseSizeX, y: baseSizeY } = this.baseSize;
     this.pointList.forEach(item => {
-      const [x, y] = item
+      const [x, y] = item;
       const cloneGeometry = baseCircleGeometry.clone();
       cloneGeometry.translate(
         baseSizeX * (x / maxXAbs),

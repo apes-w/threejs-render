@@ -12,6 +12,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+import EventBus from './eventBus';
 // eslint-disable-next-line
 import MainRender from './src/js/mainRender/main';
 // eslint-disable-next-line
@@ -33,6 +34,8 @@ import DecorationDesignRender from './src/js/decorationDesignRender';
 
 // 渲染大量的点，并且测量出点之间的距离
 import MultipleParticleRender from './src/js/multipleParticleRender';
+
+window.eventBus = new EventBus();
 
 const scene = new Scene();
 const sceneWidth = window.innerWidth;
@@ -97,7 +100,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const repeatCubeRender = new RepeatCubeRender({ scene });
 
 // eslint-disable-next-line
-// const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene });
+const repeatCubeShaderRender = new RepeatCubeShaderRender({ scene, camera });
 
 // eslint-disable-next-line
 // const splitCubeRender = new SplitCubeRender(
@@ -107,7 +110,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // const decorationDesignRender = new DecorationDesignRender({ scene, camera, controls, renderer });
 
 // eslint-disable-next-line
-const multipleParticleRender = new MultipleParticleRender({ scene, camera });
+// const multipleParticleRender = new MultipleParticleRender({ scene, camera });
 
 const clock = new Clock();
 // eslint-disable-next-line
@@ -151,7 +154,8 @@ window.addEventListener('click', (e) => {
   console.log('触发点击事件', e);
   // fireworksRender.handleClick();
   // decorationDesignRender.handleClick(e);
-  multipleParticleRender.handleClick(e);
+  // multipleParticleRender.handleClick(e);
+  repeatCubeShaderRender.handlerClick(e);
 });
 
 // 监听键盘- 按下 - 长按会一直触发这个事件
