@@ -60,6 +60,9 @@ class CubeRender {
     this.mesh = null;
     this.changePointIndex = false;
 
+    this.firstP = null;
+    this.secondP = null;
+
     this.init();
   }
 
@@ -100,6 +103,16 @@ class CubeRender {
     return ray;
   }
 
+  getStraightLineDistance() {
+    if (!this.firstP || !this.secondP) {
+      return;
+    }
+
+    const length = this.firstP.distanceTo(this.secondP);
+    // console.log(length);
+    window.eventBus.dispatch('setPEndText', `直线距离：${length}`);
+  }
+
   handlerClick(e) {
     // 利用射线，获取点击的数据
     const ray = this.getRaycaster(e.clientX, e.clientY);
@@ -113,15 +126,19 @@ class CubeRender {
         x: point.x,
         y: point.y,
         z: point.z,
-      }))
+      }));
+      this.firstP = point;
     } else {
       window.eventBus.dispatch('setP2Text', JSON.stringify({
         x: point.x,
         y: point.y,
         z: point.z,
-      }))
+      }));
+      this.secondP = point;
     }
     this.changePointIndex = !this.changePointIndex;
+
+    this.getStraightLineDistance();
   }
 }
 
